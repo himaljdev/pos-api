@@ -1,0 +1,51 @@
+2025-07-19 22:03:42 INFO  AnnotationConfigContextLoaderUtils:83 - Could not detect default configuration classes for test class [com.registry.service.RegistryServiceApplicationTests]: RegistryServiceApplicationTests does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+2025-07-19 22:03:43 INFO  SpringBootTestContextBootstrapper:234 - Found @SpringBootConfiguration com.registry.service.RegistryServiceApplication for test class com.registry.service.RegistryServiceApplicationTests
+2025-07-19 22:03:45 INFO  RegistryServiceApplicationTests:53 - Starting RegistryServiceApplicationTests using Java 21.0.6 with PID 11592 (started by HP in D:\Personal\aventa\API\registry-service)
+2025-07-19 22:03:45 INFO  RegistryServiceApplicationTests:658 - The following 1 profile is active: "dev"
+2025-07-19 22:03:49 INFO  GenericScope:280 - BeanFactory id=057f3b52-961f-3823-9b31-b5c6d68525c0
+2025-07-19 22:03:50 INFO  OptionalValidatorFactoryBean:48 - Failed to set up a Bean Validation provider: jakarta.validation.NoProviderFoundException: Unable to create a Configuration, because no Jakarta Bean Validation provider could be found. Add a provider like Hibernate Validator (RI) to your classpath.
+2025-07-19 22:03:52 WARN  LoadBalancerCacheAutoConfiguration$LoadBalancerCaffeineWarnLogger:94 - Spring Cloud LoadBalancer is currently working with the default cache. While this cache implementation is useful for development and tests, it's recommended to use Caffeine cache in production.You can switch to using Caffeine cache, by adding it and org.springframework.cache.caffeine.CaffeineCacheManager to the classpath.
+2025-07-19 22:03:52 INFO  InstanceInfoFactory:72 - Setting initial instance status as: STARTING
+2025-07-19 22:03:52 INFO  DiscoveryClient:329 - Initializing Eureka in region us-east-1
+2025-07-19 22:03:52 INFO  DiscoveryClient:332 - Client configured to neither register nor query for data.
+2025-07-19 22:03:52 INFO  DiscoveryClient:347 - Discovery Client initialized at timestamp 1752942832880 with initial instances count: 0
+2025-07-19 22:03:53 INFO  DefaultEurekaServerContext:64 - Initializing ...
+2025-07-19 22:03:53 INFO  PeerEurekaNodes:186 - Adding new peer nodes [http://localhost:8761/eureka/]
+2025-07-19 22:03:53 INFO  DiscoveryJerseyProvider:70 - Using JSON encoding codec LegacyJacksonJson
+2025-07-19 22:03:53 INFO  DiscoveryJerseyProvider:71 - Using JSON decoding codec LegacyJacksonJson
+2025-07-19 22:03:53 INFO  DiscoveryJerseyProvider:80 - Using XML encoding codec XStreamXml
+2025-07-19 22:03:53 INFO  DiscoveryJerseyProvider:81 - Using XML decoding codec XStreamXml
+2025-07-19 22:03:53 INFO  PeerEurekaNodes:108 - Replica node URL:  http://localhost:8761/eureka/
+2025-07-19 22:03:53 INFO  AbstractInstanceRegistry:164 - Finished initializing remote region registries. All known remote regions: []
+2025-07-19 22:03:53 INFO  DefaultEurekaServerContext:71 - Initialized
+2025-07-19 22:03:53 INFO  EndpointLinksResolver:60 - Exposing 1 endpoint beneath base path '/actuator'
+2025-07-19 22:03:53 INFO  EurekaServiceRegistry:70 - Registering application REGISTRY-SERVICE with eureka with status UP
+2025-07-19 22:03:53 INFO  EurekaServerBootstrap:142 - isAws returned false
+2025-07-19 22:03:53 INFO  EurekaServerBootstrap:108 - Initialized server context
+2025-07-19 22:03:53 INFO  PeerAwareInstanceRegistryImpl:245 - Got 1 instances from neighboring DS node
+2025-07-19 22:03:53 INFO  PeerAwareInstanceRegistryImpl:246 - Renew threshold is: 1
+2025-07-19 22:03:53 INFO  PeerAwareInstanceRegistryImpl:257 - Changing status to UP
+2025-07-19 22:03:53 INFO  EurekaServerInitializerConfiguration:68 - Started Eureka Server
+2025-07-19 22:03:53 INFO  RegistryServiceApplicationTests:59 - Started RegistryServiceApplicationTests in 8.71 seconds (process running for 14.938)
+2025-07-19 22:03:54 INFO  EurekaServiceRegistry:91 - Unregistering application REGISTRY-SERVICE with eureka with status DOWN
+2025-07-19 22:03:54 INFO  EurekaServerBootstrap:82 - Shutting down Eureka Server..
+2025-07-19 22:03:54 INFO  DefaultEurekaServerContext:77 - Shutting down ...
+2025-07-19 22:03:54 INFO  DefaultEurekaServerContext:81 - Shut down
+2025-07-19 22:03:54 INFO  EurekaServerBootstrap:92 - Eureka Service is now shutdown...
+2025-07-19 22:03:54 INFO  DefaultEurekaServerContext:77 - Shutting down ...
+2025-07-19 22:03:54 INFO  DefaultEurekaServerContext:81 - Shut down
+2025-07-19 22:03:54 ERROR EurekaJersey3ClientImpl:342 - Cannot clean connections
+java.lang.IllegalStateException: Client instance has been closed.
+	at org.glassfish.jersey.internal.guava.Preconditions.checkState(Preconditions.java:169) ~[jersey-common-3.1.10.jar:?]
+	at org.glassfish.jersey.client.JerseyClient.checkNotClosed(JerseyClient.java:248) ~[jersey-client-3.1.10.jar:?]
+	at org.glassfish.jersey.client.JerseyClient.getConfiguration(JerseyClient.java:363) ~[jersey-client-3.1.10.jar:?]
+	at org.glassfish.jersey.client.JerseyClient.getConfiguration(JerseyClient.java:54) ~[jersey-client-3.1.10.jar:?]
+	at com.netflix.discovery.shared.transport.jersey3.EurekaJersey3ClientImpl$ConnectionCleanerTask.run(EurekaJersey3ClientImpl.java:338) ~[eureka-client-jersey3-2.0.4.jar:2.0.4]
+	at java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:572) ~[?:?]
+	at java.base/java.util.concurrent.FutureTask.run(FutureTask.java:317) ~[?:?]
+	at java.base/java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask.run(ScheduledThreadPoolExecutor.java:304) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1144) ~[?:?]
+	at java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:642) ~[?:?]
+	at java.base/java.lang.Thread.run(Thread.java:1583) [?:?]
+2025-07-19 22:03:54 INFO  DiscoveryClient:887 - Shutting down DiscoveryClient ...
+2025-07-19 22:03:54 INFO  DiscoveryClient:907 - Completed shut down of DiscoveryClient
