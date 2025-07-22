@@ -10,6 +10,8 @@ import org.springframework.http.ResponseEntity;
 import java.util.Locale;
 
 public interface BillingService {
+    ResponseEntity<ApiResponse<Object>> referenceDate(ChannelRequestDTO channelRequestDTO, Locale locale);
+    ResponseEntity<ApiResponse<Object>> allStock(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> todayView(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> cashInOut(CashInOutRequestDTO cashInOutRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> checkout(BillingRequestDTO billingRequestDTO, Locale locale);

@@ -16,34 +16,48 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
 import java.util.Locale;
 
 @RestController
 @RequestMapping(path = "api/v1/billing")
 @Log4j2
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class BillingController {
 
     private final BillingService billingService;
     private final Gson gson;
 
-    @PostMapping(path = "/today-cash-in-out",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle cash In/Out today view request request ",notes = "Cash In/Out today view request success or failed")
+    @PostMapping(path = "/reference", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle reference list request request ", notes = "Reference list request success or failed")
+    public ResponseEntity<ApiResponse<Object>> referenceDate(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Reference request controller {} ", channelRequestValidatorDTO);
+        return billingService.referenceDate(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/stock-list", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle stock  list request request ", notes = "Stock list request success or failed")
+    public ResponseEntity<ApiResponse<Object>> allStock(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Stock list request controller {} ", channelRequestValidatorDTO);
+        return billingService.allStock(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/today-cash-in-out", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle cash In/Out today view request request ", notes = "Cash In/Out today view request success or failed")
     public ResponseEntity<ApiResponse<Object>> todayView(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
         log.info("Cash In/Out today view request controller {} ", channelRequestValidatorDTO);
         return billingService.todayView(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
-    @PostMapping(path = "/cash-in-out",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle cash In/Out request request ",notes = "Cash In/Out request success or failed")
+    @PostMapping(path = "/cash-in-out", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle cash In/Out request request ", notes = "Cash In/Out request success or failed")
     public ResponseEntity<ApiResponse<Object>> cashInOut(@RequestBody @Valid CashInOutRequestValidatorDTO cashInOutRequestValidatorDTO, Locale locale) {
         log.info("Cash In/Out request controller {} ", cashInOutRequestValidatorDTO);
         return billingService.cashInOut(gson.fromJson(gson.toJson(cashInOutRequestValidatorDTO), CashInOutRequestDTO.class), locale);
     }
 
-    @PostMapping(path = "/checkout",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
-    @ApiOperation(value = "Handle checkout request request ",notes = "Checkout request success or failed")
+    @PostMapping(path = "/checkout", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle checkout request request ", notes = "Checkout request success or failed")
     public ResponseEntity<ApiResponse<Object>> checkout(@RequestBody @Valid BillingRequestValidatorDTO billingRequestValidatorDTO, Locale locale) {
         log.info("Checkout request controller {} ", billingRequestValidatorDTO);
         return billingService.checkout(gson.fromJson(gson.toJson(billingRequestValidatorDTO), BillingRequestDTO.class), locale);

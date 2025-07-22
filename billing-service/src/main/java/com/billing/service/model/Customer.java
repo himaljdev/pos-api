@@ -1,5 +1,6 @@
 package com.billing.service.model;
 
+import com.billing.service.enums.Status;
 import com.billing.service.enums.Title;
 import jakarta.persistence.*;
 import lombok.Data;
@@ -38,5 +39,9 @@ public class Customer extends AdminAudit implements Serializable {
 
     @Column(name = "email")
     private String email;
+
+    @Column(name = "status",nullable = false)
+    @Enumerated(EnumType.STRING)
+    private Status status;
 
 }

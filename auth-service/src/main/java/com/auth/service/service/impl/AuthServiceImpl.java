@@ -7,6 +7,7 @@ import com.auth.service.enums.Channel;
 import com.auth.service.enums.Status;
 import com.auth.service.model.CashierUser;
 import com.auth.service.model.Token;
+import com.auth.service.repository.CashInOutRepository;
 import com.auth.service.repository.CashierUserRepository;
 import com.auth.service.repository.PasswordPolicyRepository;
 import com.auth.service.repository.TokenRepository;
@@ -15,6 +16,7 @@ import com.auth.service.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.modelmapper.ModelMapper;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.MessageSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.NoSuchAlgorithmException;
+import java.util.Date;
 import java.util.Locale;
 import java.util.Optional;
 
@@ -37,6 +40,12 @@ public class AuthServiceImpl implements AuthService {
     private final JwtUtil jwtUtil;
     private final TokenRepository tokenRepository;
     private final ModelMapper modelMapper;
+    private final CashInOutRepository cashInOutRepository;
+
+    @Cacheable(value = "isOpening", key = "#cashier + ':' + #startdate + ':' + #endDate + ':' +#cashInOut")
+    public boolean isOpening(String cashier, Date startDate, Date endDate, com.auth.service.enums.CashInOut cashInOut) {
+        return cashInOutRepository.existsByCashierUser_UsernameAndCreatedDateBetweenAndCashInOut(cashier, startDate, endDate, cashInOut);
+    }
 
     /**
      * Handles user login logic: validates credentials, checks status, password expiry, and attempts, generates JWT, and updates user state.
@@ -112,10 +121,26 @@ public class AuthServiceImpl implements AuthService {
             responseDTO.setStatusDescription(Status.valueOf(responseDTO.getStatus()).getDescription());
             responseDTO.setAccessToken(accessToken);
             updateSuccessLoginAfter(cashierUser, loginRequestDTO, token);
+            boolean opening = getOpening(cashierUser);
+            responseDTO.setOpening(opening);
             return ResponseEntity.ok().body(responseUtil.success(responseDTO, messageSource.getMessage(ResponseMessageUtil.AUTHENTICATION_SUCCESS, null, locale)));
 
         } catch (Exception e) {
             log.error("Login error", e);
+            throw e;
+        }
+    }
+
+    private boolean getOpening(CashierUser cashierUser){
+        try {
+            log.info("Getting opening balance");
+            Date startOfToday = DateTimeUtil.getStartOfToday();
+            Date endOfToday = DateTimeUtil.getEndOfToday();
+            boolean opening = isOpening(cashierUser.getUsername(), startOfToday, endOfToday, com.auth.service.enums.CashInOut.OP);
+            log.info("Opening balance: {}", opening);
+            return opening;
+        }catch (Exception e){
+            log.error(e);
             throw e;
         }
     }

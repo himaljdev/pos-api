@@ -20,6 +20,8 @@ public class ResponseMessageUtil {
     public static final String CASHIER_NOT_FOUND = "val.cashier.not.found";
     public static final String CUSTOMER_NOT_FOUND = "val.customer.not.found";
     public static final String BILLING_PROCESSED_SUCCESS = "val.billing.processed.success";
+    public static final String BILLING_STOCK_FILTER_LIST_SUCCESS = "val.billing.stock.filter.list.success";
+    public static final String BILLING_REFERENCE_DATE_SUCCESS = "val.billing.reference.date.success";
 
     /* JWT/Auth */
     public static final String JWT_INVALID_TOKEN = "val.jwt.invalid.token";
@@ -31,4 +33,5 @@ public class ResponseMessageUtil {
     /* Cash In/Out */
     public static final String CASH_IN_OUT_ADDED_SUCCESSFULLY = "val.cash.in.out.added.success";
     public static final String CASH_IN_OUT_RETRIEVE_SUCCESSFULLY = "val.cash.in.out.retrieve.success";
+    public static final String OPENING_BALANCE_RETRIEVE_SUCCESSFULLY = "val.opening.balance.retrieve.success";
 }

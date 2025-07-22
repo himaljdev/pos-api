@@ -1,4 +1,4 @@
-package com.billing.service.enums;
+package com.auth.service.enums;
 
 public enum CashInOut implements DescribableEnum {
     IN("In"),

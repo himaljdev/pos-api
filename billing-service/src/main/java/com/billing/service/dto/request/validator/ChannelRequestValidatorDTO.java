@@ -17,7 +17,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
 @Data
-@Conditional(selected = "message" , values = {"CHECKOUT","CASH_IN_OUT","CASH_IN_OUT_VIEW"} ,required = {"username"} ,message = "Username is required")
+@Conditional(selected = "message" , values = {"CHECKOUT","CASH_IN_OUT","CASH_IN_OUT_VIEW","STOCK_FILTER_LIST","REFERENCE_DATA"} ,required = {"username"} ,message = "Username is required")
 public class ChannelRequestValidatorDTO {
     @NotBlank(message = "Channel is required")
     @ValidEnum(enumClass = Channel.class,message = "Invalid channel")

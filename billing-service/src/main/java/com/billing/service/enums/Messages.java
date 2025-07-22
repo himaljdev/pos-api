@@ -8,5 +8,5 @@
 package com.billing.service.enums;
 
 public enum Messages {
-  LOGIN,CHECKOUT,CASH_IN_OUT,CASH_IN_OUT_VIEW
+  LOGIN,CHECKOUT,CASH_IN_OUT,CASH_IN_OUT_VIEW,STOCK_FILTER_LIST,REFERENCE_DATA
 }

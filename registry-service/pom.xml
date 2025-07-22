@@ -10,7 +10,7 @@
 	</parent>
 	<groupId>com.registry</groupId>
 	<artifactId>registry-service</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>registry-service</name>
 	<description>service for registry</description>
 	<url/>

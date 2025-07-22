@@ -1,4 +1,4 @@
-package com.billing.service.model;
+package com.auth.service.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -25,7 +25,7 @@ public class CashInOut extends AdminAudit implements Serializable {
 
     @Column(name = "cash_in_out", nullable = false)
     @Enumerated(EnumType.STRING)
-    private com.billing.service.enums.CashInOut cashInOut;
+    private com.auth.service.enums.CashInOut cashInOut;
 
     @Column(name = "remark")
     private String remark;

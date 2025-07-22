@@ -21,7 +21,6 @@ import java.util.Locale;
 @RequestMapping(path = "api/v1/auth")
 @Log4j2
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AuthService authService;

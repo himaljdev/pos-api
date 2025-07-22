@@ -10,7 +10,8 @@ package com.billing.service.enums;
 
 public enum Status implements DescribableEnum {
     ACTIVE("Active"),
-    INACTIVE("Inactive");
+    INACTIVE("Inactive"),
+    DELETE("Delete");
 
     private final String description;
 

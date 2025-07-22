@@ -15,4 +15,6 @@ public interface CashInOutRepository extends JpaRepository<CashInOut, Long> {
             Date endDate
     );
 
+    boolean existsByCashierUser_UsernameAndCreatedDateBetweenAndCashInOut(String username, Date startDate, Date endDate, com.billing.service.enums.CashInOut cashInOut);
+
 }

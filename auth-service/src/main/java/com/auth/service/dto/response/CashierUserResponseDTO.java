@@ -31,4 +31,5 @@ public class CashierUserResponseDTO {
     private boolean expectingFirstTimeLogging;
     private Date passwordExpiredDate;
     private SimpleBaseDTO location;
+    private boolean opening;
 }

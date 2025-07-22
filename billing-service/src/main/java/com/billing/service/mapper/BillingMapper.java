@@ -1,8 +1,13 @@
 package com.billing.service.mapper;
 
+import com.billing.service.dto.SimpleBaseDTO;
 import com.billing.service.dto.request.CashInOutRequestDTO;
 import com.billing.service.dto.response.CashInOutResponseDTO;
 import com.billing.service.dto.response.InvoiceResponseDTO;
+import com.billing.service.dto.response.ItemResponseDTO;
+import com.billing.service.dto.response.StockResponseDTO;
+import com.billing.service.enums.Status;
+import com.billing.service.enums.Unit;
 import com.billing.service.model.*;
 import com.billing.service.dto.request.BillingRequestDTO;
 import com.billing.service.dto.request.BillingItemRequestDTO;
@@ -75,6 +80,43 @@ public class BillingMapper {
         cashInOutResponseDTO.setDate(cashInOut.getCreatedDate());
         cashInOutResponseDTO.setId(cashInOut.getId());
         return cashInOutResponseDTO;
+    }
+
+    public static StockResponseDTO toStock(Stock stock) {
+
+        ItemResponseDTO itemResponseDTO = new ItemResponseDTO();
+        itemResponseDTO.setId(stock.getItem().getId());
+        itemResponseDTO.setCode(stock.getItem().getCode());
+        itemResponseDTO.setDescription(stock.getItem().getDescription());
+        itemResponseDTO.setStatus(stock.getItem().getStatus().name());
+        itemResponseDTO.setUnit(stock.getItem().getUnit().name());
+        itemResponseDTO.setUnitDescription(Unit.valueOf(stock.getItem().getUnit().name()).getDescription());
+
+        SimpleBaseDTO category = new SimpleBaseDTO();
+        category.setCode(stock.getItem().getCategory().getCode());
+        category.setDescription(stock.getItem().getCategory().getDescription());
+
+        SimpleBaseDTO brand = new SimpleBaseDTO();
+        brand.setCode(stock.getItem().getBrand().getCode());
+        brand.setDescription(stock.getItem().getBrand().getDescription());
+
+        itemResponseDTO.setCategory(category);
+        itemResponseDTO.setBrand(brand);
+
+        StockResponseDTO stockResponseDTO = new StockResponseDTO();
+        stockResponseDTO.setId(stock.getId());
+        stockResponseDTO.setLablePrice(stock.getLablePrice());
+        stockResponseDTO.setItemCost(stock.getItemCost());
+        stockResponseDTO.setRetailPrice(stock.getRetailPrice());
+        stockResponseDTO.setWholesalePrice(stock.getWholesalePrice());
+        stockResponseDTO.setRetailDiscount(stock.getRetailDiscount());
+        stockResponseDTO.setWholesaleDiscount(stock.getWholesaleDiscount());
+        stockResponseDTO.setQty(stock.getQty());
+        stockResponseDTO.setItem(itemResponseDTO);
+        stockResponseDTO.setStatus(stock.getStatus().name());
+        stockResponseDTO.setStatusDescription(Status.valueOf(stock.getStatus().name()).getDescription());
+
+        return stockResponseDTO;
     }
 
 } 
