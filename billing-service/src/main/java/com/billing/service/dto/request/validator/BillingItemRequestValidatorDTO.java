@@ -14,7 +14,6 @@ public class BillingItemRequestValidatorDTO {
     @Min(value = 1, message = "Qty must be at least 1")
     private int qty;
     private BigDecimal salesPrice;
-    private Double salesDiscount;
     @NotNull(message = "Stock is required")
     private Long stock;
 }

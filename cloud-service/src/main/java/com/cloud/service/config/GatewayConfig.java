@@ -22,6 +22,9 @@ public class GatewayConfig {
                 .route("billing-service", r -> r
                         .path("/billing/**")
                         .uri("lb://billing-service"))
+                .route("returns-service", r -> r
+                        .path("/returns/**")
+                        .uri("lb://returns-service"))
                 .build();
     }
 

@@ -20,6 +20,5 @@ public class CashInOutRequestValidatorDTO extends ChannelRequestValidatorDTO{
     private String remark;
     @NotNull(message = "Amount is required")
     @DecimalMin(value = "0.00", inclusive = true, message = "Amount must be greater than 0")
-    @Positive(message = "Amount must be a positive value")
     private Double amount;
 }

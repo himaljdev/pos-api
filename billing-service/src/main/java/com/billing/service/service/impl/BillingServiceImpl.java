@@ -10,11 +10,14 @@ import com.billing.service.repository.*;
 import com.billing.service.service.BillingService;
 import com.billing.service.specification.StockSpecification;
 import com.billing.service.util.DateTimeUtil;
+import com.billing.service.util.PaginationUtil;
 import com.billing.service.util.ResponseUtil;
-import com.github.andrewoma.dexx.collection.Maps;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.context.MessageSource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -113,7 +116,15 @@ public class BillingServiceImpl implements BillingService {
         try {
             log.info("Stock filter list request {}", channelRequestDTO);
 
+//            PaginationRequest pa = new PaginationRequest();
+//            Pageable e = PaginationUtil.getPageable(pa);
+
             return findByUsername(channelRequestDTO.getUsername()).map(user -> {
+
+//                Specification<Stock> spec = StockSpecification.getSpecification(user.getLocation().getCode());
+//
+//                Page<Stock> stocks = stockRepository.findAll(spec, e);
+
                 List<Stock> stocks = stockRepository.findAll(StockSpecification.getSpecification(user.getLocation().getCode()));
                 log.info("Stock filter records {}", stocks);
                 log.info("Stock filter records map start");
@@ -142,7 +153,7 @@ public class BillingServiceImpl implements BillingService {
             Date endOfToday = DateTimeUtil.getEndOfToday();
             List<CashInOut> cashInOut = getCashInOut(channelRequestDTO.getUsername(), startOfToday, endOfToday);
             List<CashInOutResponseDTO> inOutResponseDTOS = cashInOut.stream().map(BillingMapper::toCashInOut).toList();
-            return ResponseEntity.ok().body(responseUtil.success(inOutResponseDTOS, messageSource.getMessage(ResponseMessageUtil.CASH_IN_OUT_RETRIEVE_SUCCESSFULLY, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(Map.of("cash",inOutResponseDTOS), messageSource.getMessage(ResponseMessageUtil.CASH_IN_OUT_RETRIEVE_SUCCESSFULLY, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;

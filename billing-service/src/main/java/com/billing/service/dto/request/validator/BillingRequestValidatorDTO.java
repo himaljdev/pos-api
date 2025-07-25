@@ -29,10 +29,8 @@ public class BillingRequestValidatorDTO extends ChannelRequestValidatorDTO {
     private String salesType;
     @NotNull(message = "Total amount is required")
     @DecimalMin(value = "0.01", inclusive = true, message = "Total amount must be greater than 0")
-    @Positive(message = "Total Amount must be a positive value")
     private BigDecimal totalAmount;
     @NotNull(message = "Pay amount is required")
-    @Positive(message = "Pay Amount must be a positive value")
     @DecimalMin(value = "0.00", inclusive = true, message = "Pay amount must be greater than 0")
     private BigDecimal payAmount;
     private String remark;

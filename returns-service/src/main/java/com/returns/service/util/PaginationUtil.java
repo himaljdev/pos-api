@@ -1,6 +1,6 @@
-package com.billing.service.util;
+package com.returns.service.util;
 
-import com.billing.service.dto.request.PaginationRequest;
+import com.returns.service.dto.request.PaginationRequest;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
