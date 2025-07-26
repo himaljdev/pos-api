@@ -1,9 +1,13 @@
 package com.returns.service.mapper;
 
 import com.returns.service.dto.SimpleBaseDTO;
+import com.returns.service.dto.request.CustomerReturnRequestDTO;
+import com.returns.service.dto.request.CustomerReturnRequestItemDTO;
 import com.returns.service.dto.response.*;
 import com.returns.service.enums.*;
 import com.returns.service.model.*;
+
+import java.util.List;
 
 
 public class ReturnMapper {
@@ -42,6 +46,7 @@ public class ReturnMapper {
     }
 
     public static BillingDetailResponseDTO toCustomerReturnDetails(BillingDetail billingDetail) {
+
         BillingDetailResponseDTO billingDetailResponseDTO = new BillingDetailResponseDTO();
         billingDetailResponseDTO.setId(billingDetail.getId());
         billingDetailResponseDTO.setQty(billingDetail.getQty());
@@ -55,7 +60,6 @@ public class ReturnMapper {
         billingDetailResponseDTO.setWholesaleDiscount(billingDetail.getWholesaleDiscount());
 
         StockResponseDTO stockResponseDTO = new StockResponseDTO();
-
         ItemResponseDTO itemResponseDTO = new ItemResponseDTO();
         itemResponseDTO.setCode(billingDetail.getStock().getItem().getCode());
         itemResponseDTO.setDescription(billingDetail.getStock().getItem().getDescription());
@@ -70,12 +74,47 @@ public class ReturnMapper {
 
         itemResponseDTO.setCategory(cate);
         itemResponseDTO.setBrand(brand);
-
         stockResponseDTO.setItem(itemResponseDTO);
-
         billingDetailResponseDTO.setStock(stockResponseDTO);
 
         return billingDetailResponseDTO;
+    }
+
+    public static BillingDetailResponseDTO toCustomerReturnDetails(BillingDetail billingDetail, List<ReturnDetails> returnDetailsList) {
+        BillingDetailResponseDTO billingDetailResponseDTO = toCustomerReturnDetails(billingDetail);
+        // Sum qty for this BillingDetail (by matching stock or other unique key)
+        java.math.BigDecimal totalReturnQty = java.math.BigDecimal.ZERO;
+        if (returnDetailsList != null) {
+            for (ReturnDetails rd : returnDetailsList) {
+                // Assuming ReturnDetails has a Stock or BillingDetail reference, match by stock
+                if (rd.getReturns().getBilling().getId().equals(billingDetail.getBilling().getId()) &&
+                    rd.getReturns().getBilling().getInvoiceNumber().equals(billingDetail.getBilling().getInvoiceNumber()) &&
+                    rd.getReturns().getBilling().getId() != null) {
+                    totalReturnQty = totalReturnQty.add(rd.getQty());
+                }
+            }
+        }
+        billingDetailResponseDTO.setQty(totalReturnQty);
+        return billingDetailResponseDTO;
+    }
+
+
+    public static Returns returns(CustomerReturnRequestDTO customerReturnRequestDTO,
+                                             Billing billing,Location location) {
+        Returns returns = new Returns();
+        returns.setBilling(billing);
+        returns.setLocation(location);
+        returns.setRemark(customerReturnRequestDTO.getRemark());
+        returns.setDebitAmount(customerReturnRequestDTO.getDebitAmount());
+        return returns;
+    }
+
+
+    public static ReturnDetails returnsDetails(Returns returns,CustomerReturnRequestItemDTO requestItemDTO) {
+        ReturnDetails returnsDetails = new ReturnDetails();
+        returnsDetails.setReturns(returns);
+        returnsDetails.setQty(requestItemDTO.getQty());
+        return returnsDetails;
     }
 
 

@@ -38,4 +38,7 @@ public class ResponseMessageUtil {
     public static final String BILLING_FILTER_LIST_SUCCESS = "val.billing.filter.list.success";
     public static final String BILLING_NOT_FOUND = "val.billing.not.found";
     public static final String BILLING_DETAIL_RETRIEVED_SUCCESS = "val.billing.details.retrieved.success";
+    public static final String SOME_ITEMS_NOT_REGISTER_INVOICE = "val.some.items.not.billing.invoice";
+    public static final String RETURN_AMOUNT_DO_NOT_MATCH = "val.return.amount.do.not.match";
+    public static final String CUSTOMER_ITEM_RETURN_SUCCESS = "val.customer.item.return.success";
 }

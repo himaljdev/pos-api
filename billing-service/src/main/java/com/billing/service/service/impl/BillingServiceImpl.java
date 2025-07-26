@@ -199,93 +199,73 @@ public class BillingServiceImpl implements BillingService {
             return cashierUserRepository.findByUsername(billingRequestDTO.getCashierUser())
                     .map(cashier -> getCustomerById(billingRequestDTO.getCustomer())
                             .map(customer -> {
-                                // Merge duplicate stock entries by summing qty
+                                // Store items with duplicate stock IDs in a list
                                 List<BillingItemRequestDTO> items = billingRequestDTO.getBillingItem();
-                                Map<Long, BillingItemRequestDTO> mergedItems = new HashMap<>();
+                                Map<Long, List<BillingItemRequestDTO>> groupedItems = new HashMap<>();
                                 for (BillingItemRequestDTO item : items) {
                                     Long stockKey = item.getStock();
-                                    Boolean isOther = item.getOther();
-                                    if (isOther){
-                                        BillingItemRequestDTO copy = new BillingItemRequestDTO();
-                                        copy.setStock(item.getStock());
-                                        copy.setQty(item.getQty());
-                                        copy.setSalesPrice(item.getSalesPrice());
-                                        copy.setSalesDiscount(item.getSalesDiscount());
-                                        mergedItems.put(stockKey, copy);
-                                        continue;
-                                    }
-                                    if (mergedItems.containsKey(stockKey)) {
-                                        BillingItemRequestDTO existing = mergedItems.get(stockKey);
-                                        existing.setQty(existing.getQty().add(item.getQty()));
-                                    } else {
-                                        BillingItemRequestDTO copy = new BillingItemRequestDTO();
-                                        copy.setStock(item.getStock());
-                                        copy.setQty(item.getQty());
-                                        copy.setSalesPrice(item.getSalesPrice());
-                                        copy.setSalesDiscount(item.getSalesDiscount());
-                                        mergedItems.put(stockKey, copy);
-                                    }
+                                    groupedItems.computeIfAbsent(stockKey, k -> new ArrayList<>()).add(item);
                                 }
-                                List<BillingItemRequestDTO> mergedList = new ArrayList<>(mergedItems.values());
                                 List<BillingItemRequestDTO> otherItem = new ArrayList<>();
                                 BigDecimal totalAmount = BigDecimal.ZERO;
 
-                                for (BillingItemRequestDTO itemReq : mergedList) {
-                                    Long stockId = itemReq.getStock();
-                                    log.info("processing item {}", stockId);
-                                    Boolean isOther = itemReq.getOther();
-                                    log.info("processing item {}", isOther);
-                                    BigDecimal reqQty = itemReq.getQty();
+                                // Process each group of items with the same stockId
+                                for (Map.Entry<Long, List<BillingItemRequestDTO>> entry : groupedItems.entrySet()) {
+                                    Long stockId = entry.getKey();
+                                    List<BillingItemRequestDTO> itemList = entry.getValue();
 
-                                    if (isOther) {
-                                        log.info("Other stock {} ", stockId);
-                                        otherItem.add(itemReq);
-                                        continue;
-                                    }
+                                    for (BillingItemRequestDTO itemReq : itemList) {
+                                        log.info("Processing item {}", stockId);
+                                        Boolean isOther = itemReq.getOther();
+                                        log.info("Processing item isOther {}", isOther);
+                                        BigDecimal reqQty = itemReq.getQty();
 
-                                    Stock stock = getStock(stockId, cashier.getLocation().getCode(), Status.ACTIVE)
-                                            .orElse(null);
-
-                                    if (stock == null) {
-                                        log.info("Stock not found for item {} at location {}", stockId, cashier.getLocation().getCode());
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.STOCK_NOT_FOUND, new Object[]{stockId}, locale)));
-                                    }
-
-                                    if (stock.getQty().compareTo(reqQty) < 0) {
-                                        log.info("Insufficient stock for item {}: requested {}, available {}", stockId, reqQty, stock.getQty());
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.INSUFFICIENT_STOCK, new Object[]{stockId, reqQty, stock.getQty()}, locale)));
-                                    }
-                                    BigDecimal itemCost = stock.getItemCost();
-
-                                    BigDecimal reqTotal;
-                                    if (billingRequestDTO.getSalesType().equals(SalesType.NORMAL.name())) {
-
-                                        if (itemReq.getSalesPrice() != null) {
-                                            reqTotal = itemReq.getSalesPrice();
-                                        } else {
-                                            reqTotal = stock.getRetailPrice();
+                                        if (isOther) {
+                                            log.info("Other stock {} ", stockId);
+                                            otherItem.add(itemReq);
+                                            continue;
                                         }
 
-                                        log.info("Sales price {}", reqTotal);
-                                    } else {
-                                        reqTotal = stock.getWholesalePrice();
-                                    }
+                                        Stock stock = getStock(stockId, cashier.getLocation().getCode(), Status.ACTIVE)
+                                                .orElse(null);
 
-                                    if (itemCost.compareTo(reqTotal) > 0) {
-                                        log.info("Item cost {} less than requested total {} for item {}", itemCost, reqTotal, stockId);
-                                        return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.ITEM_COST_INVALID, new Object[]{stockId}, locale)));
+                                        if (stock == null) {
+                                            log.info("Stock not found for item {} at location {}", stockId, cashier.getLocation().getCode());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.STOCK_NOT_FOUND, new Object[]{stockId}, locale)));
+                                        }
+
+                                        // Sum quantities for stock availability check
+                                        BigDecimal totalQty = itemList.stream()
+                                                .filter(item -> !item.getOther())
+                                                .map(BillingItemRequestDTO::getQty)
+                                                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+                                        if (stock.getQty().compareTo(totalQty) < 0) {
+                                            log.info("Insufficient stock for item {}: requested {}, available {}", stockId, totalQty, stock.getQty());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.INSUFFICIENT_STOCK, new Object[]{stockId, totalQty, stock.getQty()}, locale)));
+                                        }
+                                        BigDecimal itemCost = stock.getItemCost();
+
+                                        BigDecimal reqTotal;
+                                        if (billingRequestDTO.getSalesType().equals(SalesType.NORMAL.name())) {
+                                            reqTotal = itemReq.getSalesPrice() != null ? itemReq.getSalesPrice() : stock.getRetailPrice();
+                                            log.info("Sales price {}", reqTotal);
+                                        } else {
+                                            reqTotal = stock.getWholesalePrice();
+                                        }
+
+                                        if (itemCost.compareTo(reqTotal) > 0) {
+                                            log.info("Item cost {} less than requested total {} for item {}", itemCost, reqTotal, stockId);
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.ITEM_COST_INVALID, new Object[]{stockId}, locale)));
+                                        }
+                                        BigDecimal totAmount = reqTotal.multiply(reqQty);
+                                        totalAmount = totalAmount.add(totAmount);
+                                        log.info("Total amount {}", totalAmount);
                                     }
-                                    BigDecimal totAmount = reqTotal.multiply(itemReq.getQty());
-                                    totalAmount = totalAmount.add(totAmount);
-                                    log.info("Total amount {}", totalAmount);
                                 }
 
                                 if (!otherItem.isEmpty()) {
-
-                                    BigDecimal reqTotal;
-
                                     for (BillingItemRequestDTO billingItemRequestDTO : otherItem) {
-
                                         Stock stock = getStock(billingItemRequestDTO.getStock(), cashier.getLocation().getCode(), Status.ACTIVE)
                                                 .orElse(null);
 
@@ -295,8 +275,7 @@ public class BillingServiceImpl implements BillingService {
                                         }
 
                                         BigDecimal itemCost = stock.getItemCost();
-
-                                        reqTotal = billingItemRequestDTO.getSalesPrice();
+                                        BigDecimal reqTotal = billingItemRequestDTO.getSalesPrice();
 
                                         if (itemCost.compareTo(reqTotal) > 0) {
                                             log.info("Item cost {} less than requested total {} for item {}", itemCost, reqTotal, billingItemRequestDTO.getStock());
@@ -306,7 +285,6 @@ public class BillingServiceImpl implements BillingService {
                                         BigDecimal totAmount = reqTotal.multiply(billingItemRequestDTO.getQty());
                                         totalAmount = totalAmount.add(totAmount);
                                         log.info("Other item Total amount {}", totalAmount);
-
                                     }
                                 }
 
@@ -326,19 +304,28 @@ public class BillingServiceImpl implements BillingService {
                                 billingRepository.saveAndFlush(billing);
                                 log.info("Saved billing entity with ID: {}", billing.getId());
                                 // 2. Create BillingDetail for each item and update stock
-                                for (BillingItemRequestDTO itemReq : mergedList) {
-                                    Stock stock = getStock(itemReq.getStock(), cashier.getLocation().getCode(), Status.ACTIVE).orElse(null);
+                                for (Map.Entry<Long, List<BillingItemRequestDTO>> entry : groupedItems.entrySet()) {
+                                    Long stockId = entry.getKey();
+                                    List<BillingItemRequestDTO> itemList = entry.getValue();
+                                    Stock stock = getStock(stockId, cashier.getLocation().getCode(), Status.ACTIVE).orElse(null);
                                     if (stock == null) continue; // Should not happen due to earlier checks
-                                    log.info("Mapping billing detail for stock: {}", stock.getId());
-                                    BillingDetail detail = BillingMapper.toBillingDetail(billing, itemReq, stock);
-                                    log.info("Saving billing detail: {}", detail);
-                                    billingDetailRepository.saveAndFlush(detail);
-                                    log.info("Saved billing detail with ID: {}", detail.getId());
-                                    // Update stock qty
-                                    log.info("Updating stock qty for stock ID {}: {} - {}", stock.getId(), stock.getQty(), itemReq.getQty());
-                                    stock.setQty(stock.getQty().subtract(itemReq.getQty()));
+                                    BigDecimal totalQty = itemList.stream()
+                                            .filter(item -> !item.getOther())
+                                            .map(BillingItemRequestDTO::getQty)
+                                            .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                    for (BillingItemRequestDTO itemReq : itemList) {
+                                        if (itemReq.getOther()) continue; // Handled separately
+                                        log.info("Mapping billing detail for stock: {}", stockId);
+                                        BillingDetail detail = BillingMapper.toBillingDetail(billing, itemReq, stock);
+                                        log.info("Saving billing detail: {}", detail);
+                                        billingDetailRepository.saveAndFlush(detail);
+                                        log.info("Saved billing detail with ID: {}", detail.getId());
+                                    }
+                                    // Update stock qty once per stockId
+                                    log.info("Updating stock qty for stock ID {}: {} - {}", stockId, stock.getQty(), totalQty);
+                                    stock.setQty(stock.getQty().subtract(totalQty));
                                     stockRepository.saveAndFlush(stock);
-                                    log.info("Updated stock qty for stock ID {}: {}", stock.getId(), stock.getQty());
+                                    log.info("Updated stock qty for stock ID {}: {}", stockId, stock.getQty());
                                     // Send real-time update
                                     StockUpdateDTO update = new StockUpdateDTO();
                                     update.setStockId(stock.getId());
@@ -356,7 +343,7 @@ public class BillingServiceImpl implements BillingService {
                         return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.CASHIER_NOT_FOUND, new Object[]{billingRequestDTO.getCashierUser()}, locale)));
                     });
         } catch (Exception e) {
-            log.error(e);
+            log.error("Error processing checkout", e);
             throw e;
         }
     }

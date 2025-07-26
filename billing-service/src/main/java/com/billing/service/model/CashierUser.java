@@ -26,6 +26,12 @@ public class CashierUser extends AdminAudit implements Serializable {
     @Column(name = "username",nullable = false,updatable = false)
     private String username;
 
+    @Column(name = "first_name",nullable = false,updatable = false)
+    private String firstName;
+
+    @Column(name = "last_name",nullable = false,updatable = false)
+    private String lastName;
+
     @Column(name = "password",nullable = false)
     private String password;
 

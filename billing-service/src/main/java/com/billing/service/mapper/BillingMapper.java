@@ -51,13 +51,13 @@ public class BillingMapper {
     public static InvoiceResponseDTO toBillingInvoice(Billing billing) {
         InvoiceResponseDTO invoiceResponseDTO = new InvoiceResponseDTO();
         invoiceResponseDTO.setInvoiceNumber(billing.getInvoiceNumber());
-        invoiceResponseDTO.setCounter(billing.getCashierUser().getUsername());
+        invoiceResponseDTO.setCounter(billing.getCashierUser().getFirstName());
         invoiceResponseDTO.setCustomerName(billing.getCustomer().getFirstName()+" "+billing.getCustomer().getLastName());
         invoiceResponseDTO.setPaymentType(billing.getPaymentType().name());
         invoiceResponseDTO.setPaymentTypeDescription(PaymentType.valueOf(billing.getPaymentType().name()).getDescription());
         invoiceResponseDTO.setSalesType(billing.getSalesType().name());
         invoiceResponseDTO.setSalesTypeDescription(SalesType.valueOf(billing.getSalesType().name()).getDescription());
-        invoiceResponseDTO.setOutletName(billing.getLocation().getDescription());
+        invoiceResponseDTO.setOutletName(billing.getLocation().getCity());
         invoiceResponseDTO.setInvoiceDate(billing.getCreatedDate());
         return invoiceResponseDTO;
     }

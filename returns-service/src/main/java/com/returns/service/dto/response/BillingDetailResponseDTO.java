@@ -9,7 +9,6 @@ import java.math.BigDecimal;
 
 @Data
 public class BillingDetailResponseDTO {
-
     private Long id;
     private BigDecimal qty;
     private BigDecimal salesPrice;
