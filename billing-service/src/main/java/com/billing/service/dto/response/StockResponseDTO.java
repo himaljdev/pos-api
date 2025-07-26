@@ -5,6 +5,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.BigDecimal;
 
 @Data
 @AllArgsConstructor
@@ -18,7 +19,7 @@ public class StockResponseDTO {
     private BigDecimal wholesalePrice = BigDecimal.ZERO;
     private Integer retailDiscount = 0;
     private Integer wholesaleDiscount = 0;
-    private Integer qty = 0;
+    private BigDecimal qty = BigDecimal.valueOf(0);
     private String status;
     private String statusDescription;
 }

@@ -6,6 +6,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigDecimal;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -20,7 +21,7 @@ public class BillingDetail extends AdminAudit implements Serializable {
     private Long id;
 
     @Column(name = "qty",nullable = false)
-    private int qty;
+    private BigDecimal qty;
 
     @Column(name = "sales_price")
     private BigDecimal salesPrice;

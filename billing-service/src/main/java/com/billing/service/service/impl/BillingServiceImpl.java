@@ -14,6 +14,7 @@ import com.billing.service.util.PaginationUtil;
 import com.billing.service.util.ResponseUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -22,8 +23,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+
+import java.math.BigDecimal;
 import java.util.*;
 import java.math.BigDecimal;
+
 import com.billing.service.util.ResponseMessageUtil;
 import org.springframework.cache.annotation.Cacheable;
 import com.billing.service.mapper.BillingMapper;
@@ -45,6 +49,9 @@ public class BillingServiceImpl implements BillingService {
     private final InvoiceSequenceRepository invoiceSequenceRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final CashInOutRepository cashInOutRepository;
+
+    @Value("${other.item}")
+    private String otherItem;
 
     @Cacheable(value = "cashierUser", key = "#username")
     public Optional<CashierUser> findByUsername(String username) {
@@ -83,27 +90,27 @@ public class BillingServiceImpl implements BillingService {
     @Override
     @Transactional(readOnly = true)
     public ResponseEntity<ApiResponse<Object>> referenceDate(ChannelRequestDTO channelRequestDTO, Locale locale) {
-       try {
-           log.info("Get reference date {}", channelRequestDTO);
-           Map<String, Object> responseMap = new HashMap<>();
+        try {
+            log.info("Get reference date {}", channelRequestDTO);
+            Map<String, Object> responseMap = new HashMap<>();
 
-           List<CustomerResponseDTO> customerResponseDTOS = getActiveCustomers();
+            List<CustomerResponseDTO> customerResponseDTOS = getActiveCustomers();
 
-           List<SimpleBaseDTO> salesType = Arrays.stream(SalesType.values())
-                   .map(st -> new SimpleBaseDTO(st.name(), st.getDescription())).toList();
+            List<SimpleBaseDTO> salesType = Arrays.stream(SalesType.values())
+                    .map(st -> new SimpleBaseDTO(st.name(), st.getDescription())).toList();
 
-           List<SimpleBaseDTO> cashInOutType = Arrays.stream(com.billing.service.enums.CashInOut.values())
-                   .map(ci -> new SimpleBaseDTO(ci.name(), ci.getDescription())).toList();
+            List<SimpleBaseDTO> cashInOutType = Arrays.stream(com.billing.service.enums.CashInOut.values())
+                    .map(ci -> new SimpleBaseDTO(ci.name(), ci.getDescription())).toList();
 
-           responseMap.put("customer", customerResponseDTOS);
-           responseMap.put("salesType", salesType);
-           responseMap.put("cashInOut", cashInOutType);
+            responseMap.put("customer", customerResponseDTOS);
+            responseMap.put("salesType", salesType);
+            responseMap.put("cashInOut", cashInOutType);
 
-           return ResponseEntity.ok().body(responseUtil.success((Object) responseMap, messageSource.getMessage(ResponseMessageUtil.BILLING_REFERENCE_DATE_SUCCESS, null, locale)));
-       }catch (Exception e) {
-           log.error(e);
-           throw e;
-       }
+            return ResponseEntity.ok().body(responseUtil.success((Object) responseMap, messageSource.getMessage(ResponseMessageUtil.BILLING_REFERENCE_DATE_SUCCESS, null, locale)));
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
     }
 
     @Override
@@ -151,9 +158,11 @@ public class BillingServiceImpl implements BillingService {
             log.info("Today view {}", channelRequestDTO);
             Date startOfToday = DateTimeUtil.getStartOfToday();
             Date endOfToday = DateTimeUtil.getEndOfToday();
+            log.info(startOfToday);
+            log.info(endOfToday);
             List<CashInOut> cashInOut = getCashInOut(channelRequestDTO.getUsername(), startOfToday, endOfToday);
             List<CashInOutResponseDTO> inOutResponseDTOS = cashInOut.stream().map(BillingMapper::toCashInOut).toList();
-            return ResponseEntity.ok().body(responseUtil.success(Map.of("cash",inOutResponseDTOS), messageSource.getMessage(ResponseMessageUtil.CASH_IN_OUT_RETRIEVE_SUCCESSFULLY, null, locale)));
+            return ResponseEntity.ok().body(responseUtil.success(Map.of("cash", inOutResponseDTOS), messageSource.getMessage(ResponseMessageUtil.CASH_IN_OUT_RETRIEVE_SUCCESSFULLY, null, locale)));
         } catch (Exception e) {
             log.error(e);
             throw e;
@@ -195,9 +204,19 @@ public class BillingServiceImpl implements BillingService {
                                 Map<Long, BillingItemRequestDTO> mergedItems = new HashMap<>();
                                 for (BillingItemRequestDTO item : items) {
                                     Long stockKey = item.getStock();
+                                    Boolean isOther = item.getOther();
+                                    if (isOther){
+                                        BillingItemRequestDTO copy = new BillingItemRequestDTO();
+                                        copy.setStock(item.getStock());
+                                        copy.setQty(item.getQty());
+                                        copy.setSalesPrice(item.getSalesPrice());
+                                        copy.setSalesDiscount(item.getSalesDiscount());
+                                        mergedItems.put(stockKey, copy);
+                                        continue;
+                                    }
                                     if (mergedItems.containsKey(stockKey)) {
                                         BillingItemRequestDTO existing = mergedItems.get(stockKey);
-                                        existing.setQty(existing.getQty() + item.getQty());
+                                        existing.setQty(existing.getQty().add(item.getQty()));
                                     } else {
                                         BillingItemRequestDTO copy = new BillingItemRequestDTO();
                                         copy.setStock(item.getStock());
@@ -208,18 +227,31 @@ public class BillingServiceImpl implements BillingService {
                                     }
                                 }
                                 List<BillingItemRequestDTO> mergedList = new ArrayList<>(mergedItems.values());
+                                List<BillingItemRequestDTO> otherItem = new ArrayList<>();
                                 BigDecimal totalAmount = BigDecimal.ZERO;
+
                                 for (BillingItemRequestDTO itemReq : mergedList) {
                                     Long stockId = itemReq.getStock();
-                                    int reqQty = itemReq.getQty();
+                                    log.info("processing item {}", stockId);
+                                    Boolean isOther = itemReq.getOther();
+                                    log.info("processing item {}", isOther);
+                                    BigDecimal reqQty = itemReq.getQty();
+
+                                    if (isOther) {
+                                        log.info("Other stock {} ", stockId);
+                                        otherItem.add(itemReq);
+                                        continue;
+                                    }
 
                                     Stock stock = getStock(stockId, cashier.getLocation().getCode(), Status.ACTIVE)
                                             .orElse(null);
+
                                     if (stock == null) {
                                         log.info("Stock not found for item {} at location {}", stockId, cashier.getLocation().getCode());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.STOCK_NOT_FOUND, new Object[]{stockId}, locale)));
                                     }
-                                    if (stock.getQty() < reqQty) {
+
+                                    if (stock.getQty().compareTo(reqQty) < 0) {
                                         log.info("Insufficient stock for item {}: requested {}, available {}", stockId, reqQty, stock.getQty());
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.INSUFFICIENT_STOCK, new Object[]{stockId, reqQty, stock.getQty()}, locale)));
                                     }
@@ -227,21 +259,57 @@ public class BillingServiceImpl implements BillingService {
 
                                     BigDecimal reqTotal;
                                     if (billingRequestDTO.getSalesType().equals(SalesType.NORMAL.name())) {
-                                        reqTotal = itemReq.getSalesPrice();
+
+                                        if (itemReq.getSalesPrice() != null) {
+                                            reqTotal = itemReq.getSalesPrice();
+                                        } else {
+                                            reqTotal = stock.getRetailPrice();
+                                        }
+
                                         log.info("Sales price {}", reqTotal);
-                                    } else { // WHOLESALE
-                                        reqTotal = BigDecimal.valueOf(itemReq.getSalesDiscount() / 100);
-                                        log.info("Sales discount {}", reqTotal);
+                                    } else {
+                                        reqTotal = stock.getWholesalePrice();
                                     }
 
                                     if (itemCost.compareTo(reqTotal) > 0) {
                                         log.info("Item cost {} less than requested total {} for item {}", itemCost, reqTotal, stockId);
                                         return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.ITEM_COST_INVALID, new Object[]{stockId}, locale)));
                                     }
-                                    BigDecimal totAmount = reqTotal.multiply(BigDecimal.valueOf(itemReq.getQty()));
+                                    BigDecimal totAmount = reqTotal.multiply(itemReq.getQty());
                                     totalAmount = totalAmount.add(totAmount);
                                     log.info("Total amount {}", totalAmount);
                                 }
+
+                                if (!otherItem.isEmpty()) {
+
+                                    BigDecimal reqTotal;
+
+                                    for (BillingItemRequestDTO billingItemRequestDTO : otherItem) {
+
+                                        Stock stock = getStock(billingItemRequestDTO.getStock(), cashier.getLocation().getCode(), Status.ACTIVE)
+                                                .orElse(null);
+
+                                        if (stock == null) {
+                                            log.info("Stock not found for item {} at location {}", billingItemRequestDTO.getStock(), cashier.getLocation().getCode());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.STOCK_NOT_FOUND, new Object[]{billingItemRequestDTO.getStock()}, locale)));
+                                        }
+
+                                        BigDecimal itemCost = stock.getItemCost();
+
+                                        reqTotal = billingItemRequestDTO.getSalesPrice();
+
+                                        if (itemCost.compareTo(reqTotal) > 0) {
+                                            log.info("Item cost {} less than requested total {} for item {}", itemCost, reqTotal, billingItemRequestDTO.getStock());
+                                            return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.ITEM_COST_INVALID, new Object[]{billingItemRequestDTO.getStock()}, locale)));
+                                        }
+
+                                        BigDecimal totAmount = reqTotal.multiply(billingItemRequestDTO.getQty());
+                                        totalAmount = totalAmount.add(totAmount);
+                                        log.info("Other item Total amount {}", totalAmount);
+
+                                    }
+                                }
+
                                 // Check if totalAmount >= payAmount
                                 if (totalAmount.compareTo(billingRequestDTO.getTotalAmount()) > 0) {
                                     log.info("Total billing amount {} less than total amount amount {}", totalAmount, billingRequestDTO.getTotalAmount());
@@ -268,7 +336,7 @@ public class BillingServiceImpl implements BillingService {
                                     log.info("Saved billing detail with ID: {}", detail.getId());
                                     // Update stock qty
                                     log.info("Updating stock qty for stock ID {}: {} - {}", stock.getId(), stock.getQty(), itemReq.getQty());
-                                    stock.setQty(stock.getQty() - itemReq.getQty());
+                                    stock.setQty(stock.getQty().subtract(itemReq.getQty()));
                                     stockRepository.saveAndFlush(stock);
                                     log.info("Updated stock qty for stock ID {}: {}", stock.getId(), stock.getQty());
                                     // Send real-time update

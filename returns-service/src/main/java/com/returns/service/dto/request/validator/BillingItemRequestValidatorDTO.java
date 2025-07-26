@@ -5,13 +5,14 @@ import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigDecimal;
 
 
 @Data
 public class BillingItemRequestValidatorDTO {
     @NotNull(message = "Qty is required")
     @Min(value = 1, message = "Qty must be at least 1")
-    private int qty;
+    private BigDecimal qty;
     private BigDecimal salesPrice;
     private Double salesDiscount;
     @NotNull(message = "Stock is required")

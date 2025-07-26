@@ -7,6 +7,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.math.BigDecimal;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -44,7 +45,7 @@ public class Stock extends AdminAudit implements Serializable {
     private Integer wholesaleDiscount;
 
     @Column(name = "qty",nullable = false)
-    private Integer qty;
+    private BigDecimal qty;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_code",referencedColumnName = "code",nullable = false)

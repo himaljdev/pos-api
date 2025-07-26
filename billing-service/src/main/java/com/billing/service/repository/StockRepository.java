@@ -17,12 +17,12 @@ public interface StockRepository extends JpaRepository<Stock, Long>, JpaSpecific
     Optional<Stock> findByIdAndLocation_CodeAndStatus(Long id, String locationCode, Status status);
 
 
-    @Query("SELECT s.id AS id, s.lablePrice AS lablePrice, s.itemCost AS itemCost, " +
-            "s.retailPrice AS retailPrice, s.wholesalePrice AS wholesalePrice, " +
-            "s.retailDiscount AS retailDiscount, s.wholesaleDiscount AS wholesaleDiscount, " +
-            "s.qty AS qty, s.status AS status, s.statusDescription AS statusDescription " +
-            "FROM Stock s WHERE s.location.code = :location")
-    List<StockResponseDTO> getStockProjection(@Param("location") String location);
+//    @Query("SELECT s.id AS id, s.lablePrice AS lablePrice, s.itemCost AS itemCost, " +
+//            "s.retailPrice AS retailPrice, s.wholesalePrice AS wholesalePrice, " +
+//            "s.retailDiscount AS retailDiscount, s.wholesaleDiscount AS wholesaleDiscount, " +
+//            "s.qty AS qty, s.status AS status, s.statusDescription AS statusDescription " +
+//            "FROM Stock s WHERE s.location.code = :location")
+//    List<StockResponseDTO> getStockProjection(@Param("location") String location);
 
 
 

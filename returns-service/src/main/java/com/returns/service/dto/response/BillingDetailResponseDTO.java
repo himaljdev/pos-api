@@ -5,12 +5,13 @@ import jakarta.persistence.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.math.BigDecimal;
 
 @Data
 public class BillingDetailResponseDTO {
 
     private Long id;
-    private int qty;
+    private BigDecimal qty;
     private BigDecimal salesPrice;
     private Double salesDiscount;
     private BigDecimal itemCost;
