@@ -3,7 +3,8 @@ package com.auth.service.enums;
 public enum CashInOut implements DescribableEnum {
     IN("In"),
     OUT("Out"),
-    OP("Opening Balance");
+    OP("Opening Balance"),
+    CL("Close");
 
     private final String description;
 

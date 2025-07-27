@@ -3,7 +3,8 @@ package com.billing.service.enums;
 public enum CashInOut implements DescribableEnum {
     IN("In"),
     OUT("Out"),
-    OP("Opening Balance");
+    OP("Opening Balance"),
+    CL("Closing Balance");
 
     private final String description;
 

@@ -10,6 +10,8 @@ import java.util.Date;
 
 @Repository
 public interface CashInOutRepository extends JpaRepository<CashInOut, Long> {
-    boolean existsByCashierUser_UsernameAndCreatedDateBetweenAndCashInOut(String username, Date startDate, Date endDate, com.auth.service.enums.CashInOut cashInOut);
+
+        CashInOut findTopByCashierUser_UsernameAndCreatedDateBetweenAndCashInOutOrderByCreatedDateDesc(
+                String username, Date startDate, Date endDate, com.auth.service.enums.CashInOut cashInOut);
 
 }

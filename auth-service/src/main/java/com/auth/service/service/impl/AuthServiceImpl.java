@@ -5,6 +5,7 @@ import com.auth.service.dto.response.ApiResponse;
 import com.auth.service.dto.response.CashierUserResponseDTO;
 import com.auth.service.enums.Channel;
 import com.auth.service.enums.Status;
+import com.auth.service.model.CashInOut;
 import com.auth.service.model.CashierUser;
 import com.auth.service.model.Token;
 import com.auth.service.repository.CashInOutRepository;
@@ -43,9 +44,10 @@ public class AuthServiceImpl implements AuthService {
     private final CashInOutRepository cashInOutRepository;
 
     @Cacheable(value = "isOpening", key = "#cashier + ':' + #startdate + ':' + #endDate + ':' +#cashInOut")
-    public boolean isOpening(String cashier, Date startDate, Date endDate, com.auth.service.enums.CashInOut cashInOut) {
-        return cashInOutRepository.existsByCashierUser_UsernameAndCreatedDateBetweenAndCashInOut(cashier, startDate, endDate, cashInOut);
+    public CashInOut isOpening(String cashier, Date startDate, Date endDate, com.auth.service.enums.CashInOut cashInOut) {
+        return cashInOutRepository.findTopByCashierUser_UsernameAndCreatedDateBetweenAndCashInOutOrderByCreatedDateDesc(cashier, startDate, endDate, cashInOut);
     }
+
 
     /**
      * Handles user login logic: validates credentials, checks status, password expiry, and attempts, generates JWT, and updates user state.
@@ -136,9 +138,40 @@ public class AuthServiceImpl implements AuthService {
             log.info("Getting opening balance");
             Date startOfToday = DateTimeUtil.getStartOfToday();
             Date endOfToday = DateTimeUtil.getEndOfToday();
-            boolean opening = isOpening(cashierUser.getUsername(), startOfToday, endOfToday, com.auth.service.enums.CashInOut.OP);
-            log.info("Opening balance: {}", opening);
-            return opening;
+
+            CashInOut latestOp = isOpening(
+                    cashierUser.getUsername(), startOfToday, endOfToday, com.auth.service.enums.CashInOut.OP);
+            CashInOut latestCl = isOpening(
+                    cashierUser.getUsername(), startOfToday, endOfToday, com.auth.service.enums.CashInOut.CL);
+
+            boolean hasOpenedToday = latestOp != null;
+            boolean hasClosedToday = latestCl != null;
+
+            // Check timestamps if both OP and CL exist
+            boolean needsOpening = false;
+            if (hasOpenedToday && hasClosedToday) {
+                Date latestOpTime = latestOp.getCreatedDate();
+                Date latestClTime = latestCl.getCreatedDate();
+
+                // Example: OP at 2025/07/27 10:00 AM, CL at 2025/07/27 10:30 AM
+                // If CL is more recent than OP, cashier has closed after opening, so needs new opening
+                needsOpening = latestClTime.after(latestOpTime);
+                log.info("Latest OP time: {}, Latest CL time: {}, Needs opening: {}",
+                        latestOpTime, latestClTime, needsOpening);
+            } else if (!hasOpenedToday) {
+                // If no OP today, cashier needs to open
+                needsOpening = true;
+                log.info("No opening transaction found today, needs opening: {}", needsOpening);
+            } else if (hasOpenedToday && !hasClosedToday) {
+                // If OP exists but no CL, cashier is still open, no need for new opening
+                needsOpening = false;
+                log.info("Opened today but not closed, needs opening: {}", needsOpening);
+            }
+            
+            log.info("Opening balance check - Has opened today: {}, Has closed today: {}, Needs opening: {}", 
+                    hasOpenedToday, hasClosedToday, needsOpening);
+            
+            return needsOpening;
         }catch (Exception e){
             log.error(e);
             throw e;
