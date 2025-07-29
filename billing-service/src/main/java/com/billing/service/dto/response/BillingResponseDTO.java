@@ -1,25 +1,24 @@
 package com.billing.service.dto.response;
 
+import com.billing.service.dto.SimpleBaseDTO;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.Date;
-import java.util.List;
 
 @Data
-public class InvoiceResponseDTO {
+public class BillingResponseDTO {
+    private Long id;
     private String invoiceNumber;
-    private String counter;
     private String paymentType;
     private String paymentTypeDescription;
     private String customerName;
-    private String outletName;
+    private String customerMobile;
+    private SimpleBaseDTO location;
     private String salesType;
     private String salesTypeDescription;
-    private Date invoiceDate;
-    private int totalItems;
     private BigDecimal totalAmount;
-    private BigDecimal cashAmount;
-    private BigDecimal balanceAmount;
-    private List<InvoiceItemResponseDTO> invoiceItems;
+    private BigDecimal payAmount;
+    private String remark;
+    private Date createDate;
 }

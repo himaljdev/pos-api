@@ -8,6 +8,7 @@ import lombok.EqualsAndHashCode;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
@@ -53,5 +54,8 @@ public class Billing extends AdminAudit implements Serializable {
 
     @Column(name = "remark",nullable = false)
     private String remark;
+
+    @OneToMany(cascade = CascadeType.ALL,fetch = FetchType.LAZY,mappedBy = "billing")
+    private List<BillingDetail> billingDetailList;
 
 }

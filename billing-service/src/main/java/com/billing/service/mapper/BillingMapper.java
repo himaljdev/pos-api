@@ -2,10 +2,7 @@ package com.billing.service.mapper;
 
 import com.billing.service.dto.SimpleBaseDTO;
 import com.billing.service.dto.request.CashInOutRequestDTO;
-import com.billing.service.dto.response.CashInOutResponseDTO;
-import com.billing.service.dto.response.InvoiceResponseDTO;
-import com.billing.service.dto.response.ItemResponseDTO;
-import com.billing.service.dto.response.StockResponseDTO;
+import com.billing.service.dto.response.*;
 import com.billing.service.enums.Status;
 import com.billing.service.enums.Unit;
 import com.billing.service.model.*;
@@ -13,10 +10,12 @@ import com.billing.service.dto.request.BillingRequestDTO;
 import com.billing.service.dto.request.BillingItemRequestDTO;
 import com.billing.service.enums.PaymentType;
 import com.billing.service.enums.SalesType;
+import lombok.extern.log4j.Log4j2;
 
 import java.math.BigDecimal;
+import java.util.List;
 
-
+@Log4j2
 public class BillingMapper {
     public static Billing toBilling(BillingRequestDTO dto, CashierUser cashier, Customer customer, Location location, BigDecimal totalAmount, String invoiceNumber) {
         Billing billing = new Billing();
@@ -48,7 +47,9 @@ public class BillingMapper {
         return detail;
     }
 
-    public static InvoiceResponseDTO toBillingInvoice(Billing billing) {
+    public static InvoiceResponseDTO toBillingInvoice(Billing billing, boolean isState,
+                                                      List<InvoiceItemResponseDTO> invoiceItemResponseDTOList,
+                                                      int totalItem,BigDecimal balance) {
         InvoiceResponseDTO invoiceResponseDTO = new InvoiceResponseDTO();
         invoiceResponseDTO.setInvoiceNumber(billing.getInvoiceNumber());
         invoiceResponseDTO.setCounter(billing.getCashierUser().getFirstName());
@@ -59,7 +60,27 @@ public class BillingMapper {
         invoiceResponseDTO.setSalesTypeDescription(SalesType.valueOf(billing.getSalesType().name()).getDescription());
         invoiceResponseDTO.setOutletName(billing.getLocation().getCity());
         invoiceResponseDTO.setInvoiceDate(billing.getCreatedDate());
+
+        if(isState){
+            invoiceResponseDTO.setInvoiceItems(invoiceItemResponseDTOList);
+            invoiceResponseDTO.setTotalItems(totalItem);
+            invoiceResponseDTO.setTotalAmount(billing.getTotalAmount());
+            invoiceResponseDTO.setCashAmount(billing.getPayAmount());
+            invoiceResponseDTO.setBalanceAmount(balance);
+        }
         return invoiceResponseDTO;
+    }
+
+    public static InvoiceItemResponseDTO toBillingInvoiceItem(BillingDetail billingDetail,BigDecimal total) {
+
+        InvoiceItemResponseDTO invoiceItemResponseDTO = new InvoiceItemResponseDTO();
+        invoiceItemResponseDTO.setItem(billingDetail.getStock().getItem().getDescription());
+        invoiceItemResponseDTO.setQty(billingDetail.getQty());
+        invoiceItemResponseDTO.setSalesDiscount(billingDetail.getSalesDiscount());
+        invoiceItemResponseDTO.setSalesPrice(billingDetail.getSalesPrice());
+        invoiceItemResponseDTO.setTotal(total);
+
+        return invoiceItemResponseDTO;
     }
 
     public static CashInOut toCashInOut(CashInOutRequestDTO cashInOutRequestDTO,CashierUser cashierUser) {
@@ -81,6 +102,43 @@ public class BillingMapper {
         cashInOutResponseDTO.setId(cashInOut.getId());
         return cashInOutResponseDTO;
     }
+
+    public static BillingResponseDTO toBillingResponse(Billing billing) {
+        BillingResponseDTO billingResponseDTO = new BillingResponseDTO();
+        billingResponseDTO.setId(billing.getId());
+        billingResponseDTO.setInvoiceNumber(billing.getInvoiceNumber());
+        billingResponseDTO.setLocation(new SimpleBaseDTO(billing.getLocation().getCode(),billing.getLocation().getDescription()));
+        billingResponseDTO.setCustomerName(billing.getCustomer().getFirstName() + " " +billing.getCustomer().getLastName());
+        billingResponseDTO.setCustomerMobile(billing.getCustomer().getTelNo());
+        billingResponseDTO.setPaymentType(billing.getPaymentType().name());
+        billingResponseDTO.setPaymentTypeDescription(PaymentType.valueOf(billing.getPaymentType().name()).getDescription());
+        billingResponseDTO.setSalesType(billing.getSalesType().name());
+        billingResponseDTO.setSalesTypeDescription(SalesType.valueOf(billing.getSalesType().name()).getDescription());
+        billingResponseDTO.setTotalAmount(billing.getTotalAmount());
+        billingResponseDTO.setPayAmount(billing.getPayAmount());
+        billingResponseDTO.setRemark(billing.getRemark());
+        billingResponseDTO.setCreateDate(billing.getCreatedDate());
+        return billingResponseDTO;
+    }
+
+    public static BillingItemResponseDTO toBillingItemResponse(BillingDetail billingDetail) {
+        BillingItemResponseDTO billingItemResponseDTO = new BillingItemResponseDTO();
+
+        billingItemResponseDTO.setId(billingDetail.getId());
+        billingItemResponseDTO.setQty(billingDetail.getQty());
+        billingItemResponseDTO.setSalesPrice(billingDetail.getSalesPrice());
+        billingItemResponseDTO.setSalesDiscount(billingDetail.getSalesDiscount());
+        billingItemResponseDTO.setItemCost(billingDetail.getItemCost());
+        billingItemResponseDTO.setLablePrice(billingDetail.getLablePrice());
+        billingItemResponseDTO.setRetailPrice(billingDetail.getRetailPrice());
+        billingItemResponseDTO.setWholesalePrice(billingDetail.getWholesalePrice());
+        billingItemResponseDTO.setRetailDiscount(billingDetail.getRetailDiscount());
+        billingItemResponseDTO.setWholesaleDiscount(billingDetail.getWholesaleDiscount());
+        billingItemResponseDTO.setItemName(billingDetail.getStock().getItem().getDescription());
+
+        return billingItemResponseDTO;
+    }
+
 
     public static StockResponseDTO toStock(Stock stock) {
 

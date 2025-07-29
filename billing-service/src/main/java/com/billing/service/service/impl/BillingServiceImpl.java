@@ -1,13 +1,16 @@
 package com.billing.service.service.impl;
 
+import com.billing.service.dto.PagingResult;
 import com.billing.service.dto.SimpleBaseDTO;
 import com.billing.service.dto.request.*;
 import com.billing.service.dto.response.*;
+import com.billing.service.dto.search.KeywordSearch;
 import com.billing.service.enums.SalesType;
 import com.billing.service.enums.Status;
 import com.billing.service.model.*;
 import com.billing.service.repository.*;
 import com.billing.service.service.BillingService;
+import com.billing.service.specification.BillingSpecification;
 import com.billing.service.specification.StockSpecification;
 import com.billing.service.util.DateTimeUtil;
 import com.billing.service.util.PaginationUtil;
@@ -18,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.MessageSource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,7 +28,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 
 import java.math.BigDecimal;
 import java.util.*;
-import java.math.BigDecimal;
 
 import com.billing.service.util.ResponseMessageUtil;
 import org.springframework.cache.annotation.Cacheable;
@@ -52,6 +53,16 @@ public class BillingServiceImpl implements BillingService {
 
     @Value("${other.item}")
     private String otherItem;
+
+    @Cacheable(value = "lastInvoice", key = "#cashier")
+    public Billing lastInvoice(String cashier) {
+        return billingRepository.findTopByCashierUser_UsernameOrderByCreatedDateDesc(cashier);
+    }
+
+    @Cacheable(value = "billingItem", key = "#billingId")
+    public Optional<Billing> billingItem(Long billingId) {
+        return billingRepository.findById(billingId);
+    }
 
     @Cacheable(value = "cashierUser", key = "#username")
     public Optional<CashierUser> findByUsername(String username) {
@@ -153,7 +164,7 @@ public class BillingServiceImpl implements BillingService {
 
     @Override
     @Transactional(readOnly = true)
-    public ResponseEntity<ApiResponse<Object>> todayView(ChannelRequestDTO channelRequestDTO, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> toDayCashInOut(ChannelRequestDTO channelRequestDTO, Locale locale) {
         try {
             log.info("Today view {}", channelRequestDTO);
             Date startOfToday = DateTimeUtil.getStartOfToday();
@@ -199,7 +210,7 @@ public class BillingServiceImpl implements BillingService {
             return cashierUserRepository.findByUsername(billingRequestDTO.getCashierUser())
                     .map(cashier -> getCustomerById(billingRequestDTO.getCustomer())
                             .map(customer -> {
-                                // Store items with duplicate stock IDs in a list
+
                                 List<BillingItemRequestDTO> items = billingRequestDTO.getBillingItem();
                                 Map<Long, List<BillingItemRequestDTO>> groupedItems = new HashMap<>();
                                 for (BillingItemRequestDTO item : items) {
@@ -209,7 +220,6 @@ public class BillingServiceImpl implements BillingService {
                                 List<BillingItemRequestDTO> otherItem = new ArrayList<>();
                                 BigDecimal totalAmount = BigDecimal.ZERO;
 
-                                // Process each group of items with the same stockId
                                 for (Map.Entry<Long, List<BillingItemRequestDTO>> entry : groupedItems.entrySet()) {
                                     Long stockId = entry.getKey();
                                     List<BillingItemRequestDTO> itemList = entry.getValue();
@@ -234,7 +244,6 @@ public class BillingServiceImpl implements BillingService {
                                             return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.STOCK_NOT_FOUND, new Object[]{stockId}, locale)));
                                         }
 
-                                        // Sum quantities for stock availability check
                                         BigDecimal totalQty = itemList.stream()
                                                 .filter(item -> !item.getOther())
                                                 .map(BillingItemRequestDTO::getQty)
@@ -288,14 +297,12 @@ public class BillingServiceImpl implements BillingService {
                                     }
                                 }
 
-                                // Check if totalAmount >= payAmount
                                 if (totalAmount.compareTo(billingRequestDTO.getTotalAmount()) > 0) {
                                     log.info("Total billing amount {} less than total amount amount {}", totalAmount, billingRequestDTO.getTotalAmount());
                                     return ResponseEntity.ok().body(responseUtil.error(null, 1012, messageSource.getMessage(ResponseMessageUtil.TOTAL_AMOUNT_INVALID, new Object[]{totalAmount, billingRequestDTO.getTotalAmount()}, locale)));
                                 }
-                                // All checks passed, proceed with billing logic
+
                                 log.info("All billing checks passed. Total amount: {}", totalAmount);
-                                // 1. Create Billing entity using mapper
                                 log.info("Generating next invoice number");
                                 String invoiceNumber = getNextInvoiceNumber();
                                 log.info("Generated invoice number: {}", invoiceNumber);
@@ -303,36 +310,35 @@ public class BillingServiceImpl implements BillingService {
                                 log.info("Saving billing entity: {}", billing);
                                 billingRepository.saveAndFlush(billing);
                                 log.info("Saved billing entity with ID: {}", billing.getId());
-                                // 2. Create BillingDetail for each item and update stock
+
                                 for (Map.Entry<Long, List<BillingItemRequestDTO>> entry : groupedItems.entrySet()) {
                                     Long stockId = entry.getKey();
                                     List<BillingItemRequestDTO> itemList = entry.getValue();
                                     Stock stock = getStock(stockId, cashier.getLocation().getCode(), Status.ACTIVE).orElse(null);
-                                    if (stock == null) continue; // Should not happen due to earlier checks
+                                    if (stock == null) continue;
                                     BigDecimal totalQty = itemList.stream()
                                             .filter(item -> !item.getOther())
                                             .map(BillingItemRequestDTO::getQty)
                                             .reduce(BigDecimal.ZERO, BigDecimal::add);
                                     for (BillingItemRequestDTO itemReq : itemList) {
-                                        if (itemReq.getOther()) continue; // Handled separately
                                         log.info("Mapping billing detail for stock: {}", stockId);
                                         BillingDetail detail = BillingMapper.toBillingDetail(billing, itemReq, stock);
                                         log.info("Saving billing detail: {}", detail);
                                         billingDetailRepository.saveAndFlush(detail);
                                         log.info("Saved billing detail with ID: {}", detail.getId());
                                     }
-                                    // Update stock qty once per stockId
+
                                     log.info("Updating stock qty for stock ID {}: {} - {}", stockId, stock.getQty(), totalQty);
                                     stock.setQty(stock.getQty().subtract(totalQty));
                                     stockRepository.saveAndFlush(stock);
                                     log.info("Updated stock qty for stock ID {}: {}", stockId, stock.getQty());
-                                    // Send real-time update
+
                                     StockUpdateDTO update = new StockUpdateDTO();
                                     update.setStockId(stock.getId());
                                     update.setNewQty(stock.getQty());
                                     messagingTemplate.convertAndSend("/topic/stock-updates", update);
                                 }
-                                InvoiceResponseDTO billingInvoice = BillingMapper.toBillingInvoice(billing);
+                                InvoiceResponseDTO billingInvoice = BillingMapper.toBillingInvoice(billing,false,null,0,null);
                                 log.info("Billing response invoice mapper {}", billingInvoice);
                                 return ResponseEntity.ok().body(responseUtil.success((Object) billingInvoice, messageSource.getMessage(ResponseMessageUtil.BILLING_PROCESSED_SUCCESS, null, locale)));
                             }).orElseGet(() -> {
@@ -346,6 +352,85 @@ public class BillingServiceImpl implements BillingService {
             log.error("Error processing checkout", e);
             throw e;
         }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> lastInvoice(ChannelRequestDTO channelRequestDTO, Locale locale) {
+        try {
+            log.info("Last invoice request: {}", channelRequestDTO);
+            Billing lastBill = lastInvoice(channelRequestDTO.getUsername());
+            boolean isNormal = lastBill.getSalesType().equals(SalesType.NORMAL);
+
+            List<InvoiceItemResponseDTO> itemResponseDTOS = lastBill.getBillingDetailList().stream().map(bd -> {
+                log.info("Map billing details {} ", bd.getId());
+                BigDecimal tot;
+                if (isNormal) {
+                    tot = bd.getQty().multiply(bd.getRetailPrice());
+                } else {
+                    tot = bd.getQty().multiply(bd.getWholesalePrice());
+                }
+                return BillingMapper.toBillingInvoiceItem(bd, tot);
+            }).toList();
+            log.info("Total cost cal start");
+            BigDecimal totalCost = lastBill.getPayAmount().subtract(lastBill.getTotalAmount());
+            log.info("Total cost {}", totalCost);
+            InvoiceResponseDTO billingInvoice = BillingMapper.toBillingInvoice(lastBill, true, itemResponseDTOS, itemResponseDTOS.size(), totalCost);
+
+            log.info("Billing response invoice mapper {}", billingInvoice);
+            return ResponseEntity.ok().body(responseUtil.success((Object) billingInvoice, messageSource.getMessage(ResponseMessageUtil.LATEST_BILLING_RETRIEVE_SUCCESS, null, locale)));
+
+        } catch (Exception e) {
+            log.error(e);
+            throw e;
+        }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> toDaySalesFilterList(PaginationRequest<KeywordSearch> paginationRequest , Locale locale) {
+      try {
+          log.info("Today sales view {} ",paginationRequest);
+          Pageable pageable = PaginationUtil.getPageable(paginationRequest);
+
+          Page<Billing> billings = Objects.nonNull(paginationRequest.getSearch()) ?
+                  billingRepository.findAll(BillingSpecification.getSpecification(paginationRequest.getSearch()), pageable) :
+                  billingRepository.findAll(BillingSpecification.getSpecification(), pageable);
+          log.info("Billing filter records");
+          long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
+                  billingRepository.count(BillingSpecification.getSpecification(paginationRequest.getSearch())) :
+                  billingRepository.count(BillingSpecification.getSpecification());
+
+          List<BillingResponseDTO> billingResponseDTOStream = billings.stream().map(BillingMapper::toBillingResponse).toList();
+
+          return ResponseEntity.ok().body(responseUtil.success((Object) new PagingResult<BillingResponseDTO>(billingResponseDTOStream, billingResponseDTOStream.size(), totalElements),
+                  messageSource.getMessage(ResponseMessageUtil.TODAY_SALES_FILTER_LIST_SUCCESS,
+                          null, locale)));
+
+      }catch (Exception e) {
+          log.info(e);
+          throw e;
+      }
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ResponseEntity<ApiResponse<Object>> toDaySalesByItem(TodayBillingRequestDTO todayBillingRequestDTO, Locale locale) {
+       try {
+           log.info("Today sales item {} ",todayBillingRequestDTO.getId());
+           return billingItem(todayBillingRequestDTO.getId()).map(bi -> {
+               List<BillingItemResponseDTO> billingItemResponseDTOS = bi.getBillingDetailList()
+                       .stream().map(BillingMapper::toBillingItemResponse).toList();
+               log.info("Billing item invoice mapper ");
+               return ResponseEntity.ok().body(responseUtil.success((Object) billingItemResponseDTOS, messageSource.getMessage(ResponseMessageUtil.BILLING_ITEM_RETRIEVE_SUCCESS, null, locale)));
+           }).orElseGet(() -> {
+              log.info("Billing item not found {}",todayBillingRequestDTO.getId());
+               return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.BILLING_NOT_FOUND, new Object[]{todayBillingRequestDTO.getId()}, locale)));
+           });
+       }catch (Exception e) {
+           log.error(e);
+           throw e;
+       }
     }
 
     @Transactional
