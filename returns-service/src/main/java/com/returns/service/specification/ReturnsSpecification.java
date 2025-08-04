@@ -1,10 +1,9 @@
-package com.billing.service.specification;
+package com.returns.service.specification;
 
-import com.billing.service.dto.search.KeywordSearch;
-import com.billing.service.model.Billing;
-import com.billing.service.model.CashierUser;
-import com.billing.service.model.Customer;
-import com.billing.service.util.DateTimeUtil;
+import com.returns.service.dto.search.KeywordSearch;
+import com.returns.service.model.CashierUser;
+import com.returns.service.model.Returns;
+import com.returns.service.util.DateTimeUtil;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
@@ -15,44 +14,38 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Log4j2
-public class BillingSpecification {
+public class ReturnsSpecification {
 
-    public static Specification<Billing> getSpecification(KeywordSearch filterDto,String username) {
+    public static Specification<Returns> getSpecification(KeywordSearch filterDto,String username) {
 
-        log.info("Billing filter: " + filterDto);
-
+        log.info("Returns filter: " + filterDto);
         return (root, query,criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
-
-            Join<Billing, Customer> customerJoin = root.join("customer", JoinType.LEFT);
-            Join<Billing, CashierUser> cashierUserJoin = root.join("cashierUser", JoinType.LEFT);
+            Join<Returns, CashierUser> cashierUserJoin = root.join("cashierUser", JoinType.LEFT);
             if (filterDto.getKeyword() != null && !filterDto.getKeyword().isEmpty()) {
 
                 String keyword = "%" + filterDto.getKeyword().toLowerCase() + "%";
 
-                Predicate codePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("invoiceNumber")), keyword);
-                Predicate payPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("payAmount")), keyword);
+                Predicate codePredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("returnsInvoice")), keyword);
+                Predicate payPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("debitAmount")), keyword);
                 Predicate totalPredicate = criteriaBuilder.like(criteriaBuilder.lower(root.get("totalAmount")), keyword);
-                Predicate firstNamePredicate = criteriaBuilder.like(criteriaBuilder.lower(customerJoin.get("firstName")), keyword);
-                Predicate lastNamePredicate = criteriaBuilder.like(criteriaBuilder.lower(customerJoin.get("lastName")), keyword);
 
-                predicates.add(criteriaBuilder.or(codePredicate, payPredicate,totalPredicate,firstNamePredicate,lastNamePredicate));
+                predicates.add(criteriaBuilder.or(codePredicate, payPredicate,totalPredicate));
             }
 
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"),  DateTimeUtil.getStartOfToday()));
             predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"),DateTimeUtil.getEndOfToday()));
             predicates.add(criteriaBuilder.equal(cashierUserJoin.get("username"),username));
-
             return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
 
         };
     }
 
-    public static Specification<Billing> getSpecification(String username) {
-        log.info("Billing filter default :");
+    public static Specification<Returns> getSpecification(String username) {
+        log.info("Returns filter default :");
         return (root, query,criteriaBuilder) -> {
-            Join<Billing, CashierUser> cashierUserJoin = root.join("cashierUser", JoinType.LEFT);
             List<Predicate> predicates = new ArrayList<>();
+            Join<Returns, CashierUser> cashierUserJoin = root.join("cashierUser", JoinType.LEFT);
             predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("createdDate"),  DateTimeUtil.getStartOfToday()));
             predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("createdDate"),DateTimeUtil.getEndOfToday()));
             predicates.add(criteriaBuilder.equal(cashierUserJoin.get("username"),username));

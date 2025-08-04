@@ -17,7 +17,7 @@ import java.util.List;
 
 @Log4j2
 public class BillingMapper {
-    public static Billing toBilling(BillingRequestDTO dto, CashierUser cashier, Customer customer, Location location, BigDecimal totalAmount, String invoiceNumber) {
+    public static Billing toBilling(BillingRequestDTO dto, CashierUser cashier, Customer customer, Location location, BigDecimal totalAmount, String invoiceNumber,CheckoutToken checkoutToken) {
         Billing billing = new Billing();
         billing.setInvoiceNumber(invoiceNumber);
         billing.setCashierUser(cashier);
@@ -28,6 +28,7 @@ public class BillingMapper {
         billing.setTotalAmount(totalAmount);
         billing.setPayAmount(dto.getPayAmount());
         billing.setRemark(dto.getRemark());
+        billing.setToken(checkoutToken);
         return billing;
     }
 

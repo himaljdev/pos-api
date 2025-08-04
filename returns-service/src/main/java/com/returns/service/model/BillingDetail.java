@@ -23,6 +23,9 @@ public class BillingDetail extends AdminAudit implements Serializable {
     @Column(name = "qty",nullable = false)
     private BigDecimal qty;
 
+    @Column(name = "returns_qty",nullable = false)
+    private BigDecimal returnsQty;
+
     @Column(name = "sales_price")
     private BigDecimal salesPrice;
 

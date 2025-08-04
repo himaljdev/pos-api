@@ -12,9 +12,7 @@ import com.billing.service.repository.*;
 import com.billing.service.service.BillingService;
 import com.billing.service.specification.BillingSpecification;
 import com.billing.service.specification.StockSpecification;
-import com.billing.service.util.DateTimeUtil;
-import com.billing.service.util.PaginationUtil;
-import com.billing.service.util.ResponseUtil;
+import com.billing.service.util.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,7 +27,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.util.*;
 
-import com.billing.service.util.ResponseMessageUtil;
 import org.springframework.cache.annotation.Cacheable;
 import com.billing.service.mapper.BillingMapper;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -50,6 +47,7 @@ public class BillingServiceImpl implements BillingService {
     private final InvoiceSequenceRepository invoiceSequenceRepository;
     private final SimpMessagingTemplate messagingTemplate;
     private final CashInOutRepository cashInOutRepository;
+    private final CheckoutTokenRepository checkoutTokenRepository;
 
     @Value("${other.item}")
     private String otherItem;
@@ -205,8 +203,39 @@ public class BillingServiceImpl implements BillingService {
     @Override
     @Transactional(readOnly = false)
     public ResponseEntity<ApiResponse<Object>> checkout(BillingRequestDTO billingRequestDTO, Locale locale) {
+
         try {
+
             log.info("Processing billing request {}", billingRequestDTO.toString());
+
+            String checkoutToken = billingRequestDTO.getCheckoutToken();
+            Optional<CheckoutToken> tokenOpt;
+
+            if (checkoutToken == null || checkoutToken.isEmpty()) {
+                log.info("Checkout token is empty");
+                return ResponseEntity.ok().body(
+                        responseUtil.error(null, 1017,
+                                messageSource.getMessage(ResponseMessageUtil.CHECKOUT_TOKEN_NOT_FOUND, null, locale)));
+            }
+
+            tokenOpt = checkoutTokenRepository.findByToken(checkoutToken);
+
+            if (tokenOpt.isEmpty()) {
+                log.info("Token not found in DB: {}", checkoutToken);
+                return ResponseEntity.ok().body(
+                        responseUtil.error(null, 1018,
+                                messageSource.getMessage(ResponseMessageUtil.CHECKOUT_TOKEN_NOT_FOUND, null, locale)));
+            }
+
+            String tokenValue = tokenOpt.get().getToken();
+
+            if (billingRepository.existsByToken(tokenOpt.get())) {
+                log.info("Billing token {} already exists", tokenValue);
+                return ResponseEntity.ok().body(
+                        responseUtil.error(null, 1019,
+                                messageSource.getMessage(ResponseMessageUtil.DUPLICATE_BILLING_FOUND, null, locale)));
+            }
+
             return cashierUserRepository.findByUsername(billingRequestDTO.getCashierUser())
                     .map(cashier -> getCustomerById(billingRequestDTO.getCustomer())
                             .map(customer -> {
@@ -306,7 +335,7 @@ public class BillingServiceImpl implements BillingService {
                                 log.info("Generating next invoice number");
                                 String invoiceNumber = getNextInvoiceNumber();
                                 log.info("Generated invoice number: {}", invoiceNumber);
-                                Billing billing = BillingMapper.toBilling(billingRequestDTO, cashier, customer, cashier.getLocation(), totalAmount, invoiceNumber);
+                                Billing billing = BillingMapper.toBilling(billingRequestDTO, cashier, customer, cashier.getLocation(), totalAmount, invoiceNumber, tokenOpt.get());
                                 log.info("Saving billing entity: {}", billing);
                                 billingRepository.saveAndFlush(billing);
                                 log.info("Saved billing entity with ID: {}", billing.getId());
@@ -394,12 +423,12 @@ public class BillingServiceImpl implements BillingService {
           Pageable pageable = PaginationUtil.getPageable(paginationRequest);
 
           Page<Billing> billings = Objects.nonNull(paginationRequest.getSearch()) ?
-                  billingRepository.findAll(BillingSpecification.getSpecification(paginationRequest.getSearch()), pageable) :
-                  billingRepository.findAll(BillingSpecification.getSpecification(), pageable);
+                  billingRepository.findAll(BillingSpecification.getSpecification(paginationRequest.getSearch(),paginationRequest.getUsername()), pageable) :
+                  billingRepository.findAll(BillingSpecification.getSpecification(paginationRequest.getUsername()), pageable);
           log.info("Billing filter records");
           long totalElements = Objects.nonNull(paginationRequest.getSearch()) ?
-                  billingRepository.count(BillingSpecification.getSpecification(paginationRequest.getSearch())) :
-                  billingRepository.count(BillingSpecification.getSpecification());
+                  billingRepository.count(BillingSpecification.getSpecification(paginationRequest.getSearch(),paginationRequest.getUsername())) :
+                  billingRepository.count(BillingSpecification.getSpecification(paginationRequest.getUsername()));
 
           List<BillingResponseDTO> billingResponseDTOStream = billings.stream().map(BillingMapper::toBillingResponse).toList();
 
@@ -422,7 +451,7 @@ public class BillingServiceImpl implements BillingService {
                List<BillingItemResponseDTO> billingItemResponseDTOS = bi.getBillingDetailList()
                        .stream().map(BillingMapper::toBillingItemResponse).toList();
                log.info("Billing item invoice mapper ");
-               return ResponseEntity.ok().body(responseUtil.success((Object) billingItemResponseDTOS, messageSource.getMessage(ResponseMessageUtil.BILLING_ITEM_RETRIEVE_SUCCESS, null, locale)));
+               return ResponseEntity.ok().body(responseUtil.success((Object)Map.of( "sales",billingItemResponseDTOS), messageSource.getMessage(ResponseMessageUtil.BILLING_ITEM_RETRIEVE_SUCCESS, null, locale)));
            }).orElseGet(() -> {
               log.info("Billing item not found {}",todayBillingRequestDTO.getId());
                return ResponseEntity.ok().body(responseUtil.error(null, 1018, messageSource.getMessage(ResponseMessageUtil.BILLING_NOT_FOUND, new Object[]{todayBillingRequestDTO.getId()}, locale)));
@@ -431,6 +460,23 @@ public class BillingServiceImpl implements BillingService {
            log.error(e);
            throw e;
        }
+    }
+
+    @Override
+    @Transactional(readOnly = false)
+    public ResponseEntity<ApiResponse<Object>> checkoutToken(ChannelRequestDTO channelRequestDTO, Locale locale) {
+
+        try {
+            log.info("checkout token {} ",channelRequestDTO);
+            String s = RandomGeneratorUtil.generateRandomToken();
+            log.info("Token generated {}", s);
+            checkoutTokenRepository.saveAndFlush(new CheckoutToken(s));
+            return ResponseEntity.ok().body(responseUtil.success((Object)Map.of("checkoutToken",s), messageSource.getMessage(ResponseMessageUtil.CHECKOUT_TOKEN_GENERATE_SUCCESS, null, locale)));
+        }catch (Exception e) {
+          log.error(e);
+          throw e;
+      }
+
     }
 
     @Transactional

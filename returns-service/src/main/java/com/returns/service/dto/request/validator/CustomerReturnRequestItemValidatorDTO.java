@@ -7,8 +7,8 @@ import java.math.BigDecimal;
 
 @Data
 public class CustomerReturnRequestItemValidatorDTO {
-    @NotNull(message = "Stock is required")
-    private Long stock;
+    @NotNull(message = "Billing id is required")
+    private Long billingId;
     @NotNull(message = "Qty is required")
     private BigDecimal qty;
 }

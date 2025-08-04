@@ -4,6 +4,7 @@ import com.returns.service.dto.SimpleBaseDTO;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 @Data
 public class BillingResponseDTO {
@@ -19,4 +20,5 @@ public class BillingResponseDTO {
     private BigDecimal totalAmount;
     private BigDecimal payAmount;
     private String remark;
+    private Date createdDate;
 }

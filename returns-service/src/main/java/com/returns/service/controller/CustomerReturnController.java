@@ -5,7 +5,9 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.returns.service.dto.request.*;
 import com.returns.service.dto.request.validator.CustomerReturnRequestValidatorDTO;
+import com.returns.service.dto.request.validator.TodayReturnsRequestValidatorDTO;
 import com.returns.service.dto.response.ApiResponse;
+import com.returns.service.dto.search.KeywordSearch;
 import com.returns.service.service.CustomerReturnService;
 import com.returns.service.validator.OnReturn;
 import io.swagger.annotations.ApiOperation;
@@ -53,6 +55,21 @@ public class CustomerReturnController {
     public ResponseEntity<ApiResponse<Object>> returns(@RequestBody @Validated(OnReturn.class) @Valid CustomerReturnRequestValidatorDTO customerReturnRequestValidatorDTO, Locale locale) {
         log.info("Customer return request controller {} ", customerReturnRequestValidatorDTO);
         return customerReturnService.returns(gson.fromJson(gson.toJson(customerReturnRequestValidatorDTO), CustomerReturnRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/today-returns-list",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle today returns filter list request request ",notes = "Today returns filter list request success or failed")
+    public ResponseEntity<ApiResponse<Object>> toDayReturnsFilterList(@RequestBody @Valid PaginationRequest<KeywordSearch> paginationRequest, Locale locale) {
+        log.info("Today returns filter list request controller {} ", paginationRequest);
+        Type paginationRequestType = new TypeToken<PaginationRequest<KeywordSearch>>(){}.getType();
+        return customerReturnService.toDayReturnsFilterList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
+    }
+
+    @PostMapping(path = "/today-returns-item", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle today returns item request request ", notes = "Today returns find item  request success or failed")
+    public ResponseEntity<ApiResponse<Object>> toDayReturnsByItem(@RequestBody @Valid TodayReturnsRequestValidatorDTO todayReturnsRequestValidatorDTO, Locale locale) {
+        log.info("Today returns find item request controller {} ", todayReturnsRequestValidatorDTO);
+        return customerReturnService.toDayReturnsByItem(gson.fromJson(gson.toJson(todayReturnsRequestValidatorDTO), TodayReturnsRequestDTO.class), locale);
     }
 
 }

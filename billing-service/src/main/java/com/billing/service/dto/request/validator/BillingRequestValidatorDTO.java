@@ -38,5 +38,7 @@ public class BillingRequestValidatorDTO extends ChannelRequestValidatorDTO {
     @NotEmpty(message = "Billing(s) document is required")
     @Valid
     private List<BillingItemRequestValidatorDTO> billingItem;
+    @NotBlank(message = "Checkout token is required")
+    private String checkoutToken;
 
 }

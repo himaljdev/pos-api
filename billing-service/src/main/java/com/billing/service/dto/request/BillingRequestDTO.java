@@ -17,4 +17,5 @@ public class BillingRequestDTO extends ChannelRequestDTO{
     private BigDecimal payAmount;
     private String remark;
     private List<BillingItemRequestDTO> billingItem;
+    private String checkoutToken;
 }

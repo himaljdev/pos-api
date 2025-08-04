@@ -6,6 +6,6 @@ import java.math.BigDecimal;
 
 @Data
 public class CustomerReturnRequestItemDTO{
-    private Long stock;
+    private Long billingId;
     private BigDecimal qty;
 }

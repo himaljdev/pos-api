@@ -74,7 +74,7 @@ public class BillingController {
 
     @PostMapping(path = "/today-sales-list",produces = MediaType.APPLICATION_JSON_VALUE,consumes = MediaType.APPLICATION_JSON_VALUE)
     @ApiOperation(value = "Handle today sales filter list request request ",notes = "Today sales filter list request success or failed")
-    public ResponseEntity<ApiResponse<Object>> filterList(@RequestBody @Valid PaginationRequest<KeywordSearch> paginationRequest, Locale locale) {
+    public ResponseEntity<ApiResponse<Object>> toDaySalesFilterList(@RequestBody @Valid PaginationRequest<KeywordSearch> paginationRequest, Locale locale) {
         log.info("Today sales filter list request controller {} ", paginationRequest);
         Type paginationRequestType = new TypeToken<PaginationRequest<KeywordSearch>>(){}.getType();
         return billingService.toDaySalesFilterList(gson.fromJson(gson.toJson(paginationRequest), paginationRequestType), locale);
@@ -85,6 +85,13 @@ public class BillingController {
     public ResponseEntity<ApiResponse<Object>> toDaySalesByItem(@RequestBody @Valid TodayBillingRequestValidatorDTO todayBillingRequestValidatorDTO, Locale locale) {
         log.info("Today sales find item request controller {} ", todayBillingRequestValidatorDTO);
         return billingService.toDaySalesByItem(gson.fromJson(gson.toJson(todayBillingRequestValidatorDTO), TodayBillingRequestDTO.class), locale);
+    }
+
+    @PostMapping(path = "/checkout-token", produces = MediaType.APPLICATION_JSON_VALUE, consumes = MediaType.APPLICATION_JSON_VALUE)
+    @ApiOperation(value = "Handle checkout token request request ", notes = "Checkout token request success or failed")
+    public ResponseEntity<ApiResponse<Object>> checkoutToken(@RequestBody @Valid ChannelRequestValidatorDTO channelRequestValidatorDTO, Locale locale) {
+        log.info("Checkout token request controller {} ", channelRequestValidatorDTO);
+        return billingService.checkoutToken(gson.fromJson(gson.toJson(channelRequestValidatorDTO), ChannelRequestDTO.class), locale);
     }
 
 }

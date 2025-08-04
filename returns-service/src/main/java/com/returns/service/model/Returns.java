@@ -10,7 +10,7 @@ import java.util.List;
 
 @EqualsAndHashCode(callSuper = true)
 @Entity
-@Table(name = "return")
+@Table(name = "returns")
 @Data
 public class Returns extends AdminAudit implements Serializable {
 
@@ -29,11 +29,18 @@ public class Returns extends AdminAudit implements Serializable {
     @JoinColumn(name = "location_code",referencedColumnName = "code")
     private Location location;
 
+    @Column(name = "returns_invoice",nullable = false,unique = true,updatable = false)
+    private String returnsInvoice;
+
     @Column(name = "remark")
     private String remark;
 
     @Column(name = "debit_Amount",nullable = false)
     private BigDecimal debitAmount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "cashier_user_id",referencedColumnName = "id")
+    private CashierUser cashierUser;
 
     @OneToMany(mappedBy = "returns")
     private List<ReturnDetails> returnDetails;

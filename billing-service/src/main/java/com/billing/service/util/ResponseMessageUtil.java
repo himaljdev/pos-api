@@ -26,6 +26,9 @@ public class ResponseMessageUtil {
     public static final String TODAY_SALES_FILTER_LIST_SUCCESS = "val.today.sales.filter.list.success";
     public static final String BILLING_NOT_FOUND = "val.billing.not.found";
     public static final String BILLING_ITEM_RETRIEVE_SUCCESS = "val.billing.item.retrieve.success";
+    public static final String CHECKOUT_TOKEN_GENERATE_SUCCESS = "val.checkout.token.generate.success";
+    public static final String CHECKOUT_TOKEN_NOT_FOUND = "val.checkout.token.not.found";
+    public static final String DUPLICATE_BILLING_FOUND = "val.duplicate.billing.found";
 
     /* JWT/Auth */
     public static final String JWT_INVALID_TOKEN = "val.jwt.invalid.token";
@@ -38,4 +41,6 @@ public class ResponseMessageUtil {
     public static final String CASH_IN_OUT_ADDED_SUCCESSFULLY = "val.cash.in.out.added.success";
     public static final String CASH_IN_OUT_RETRIEVE_SUCCESSFULLY = "val.cash.in.out.retrieve.success";
 
+    /*Customer*/
+    public static final String CUSTOMER_REFERENCE_DATE_SUCCESS = "val.customer.reference.date.success";
 }

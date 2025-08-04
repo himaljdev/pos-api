@@ -17,4 +17,5 @@ public interface BillingService {
     ResponseEntity<ApiResponse<Object>> lastInvoice(ChannelRequestDTO channelRequestDTO, Locale locale);
     ResponseEntity<ApiResponse<Object>> toDaySalesFilterList(PaginationRequest<KeywordSearch> paginationRequest, Locale locale);
     ResponseEntity<ApiResponse<Object>> toDaySalesByItem(TodayBillingRequestDTO todayBillingRequestDTO, Locale locale);
+    ResponseEntity<ApiResponse<Object>> checkoutToken(ChannelRequestDTO channelRequestDTO, Locale locale);
 }

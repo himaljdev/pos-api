@@ -26,6 +26,10 @@ public class Billing extends AdminAudit implements Serializable {
     @Column(name = "invoice_number",nullable = false,updatable = false,unique = true)
     private String invoiceNumber;
 
+    @ManyToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
+    @JoinColumn(name = "token",nullable = false,updatable = false,unique = true,referencedColumnName = "id")
+    private CheckoutToken token;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "cashier_user_id",referencedColumnName = "id")
     private CashierUser cashierUser;
